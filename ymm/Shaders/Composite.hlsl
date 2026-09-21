@@ -26,10 +26,14 @@ D2D_PS_ENTRY(main)
 {
     float2 p = D2DGetScenePosition().xy;
     float4 raw = D2DGetInput(1);
-    if (factor < 1.5) return D2DGetInput(0);
     // This is the same pixel-center mapping as CUDA's
     // gx = (x + .5) / factor - .5 followed by bilinear sampling.
-    float2 q = lowBounds.xy + (p - rawBounds.xy) / factor;
+    float f = max(factor, 1);
+    float2 q = lowBounds.xy + (p - rawBounds.xy) / f;
     float4 low = lowAt(p, q);
-    return lerp(raw, low, focusAmount(p));
+    // With factor==1 input 0 is the normal full-resolution Gather output;
+    // returning it through the same sample path avoids an FXC false-positive
+    // in D2DGetInput(0)'s generated helper implementation.
+    float blend = factor < 1.5 ? 1 : focusAmount(p);
+    return lerp(raw, low, blend);
 }
