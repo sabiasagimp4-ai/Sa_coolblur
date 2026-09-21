@@ -1,0 +1,64 @@
+name: YMM4 build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download latest YMM4 Lite
+        shell: pwsh
+        run: |
+          $release = Invoke-RestMethod 'https://api.github.com/repos/manju-summoner/YukkuriMovieMaker4/releases/latest'
+          $asset = $release.assets | Where-Object name -Like '*_Lite.zip' | Select-Object -First 1
+          if (-not $asset) { throw 'YMM4 Lite archive was not found' }
+          Invoke-WebRequest $asset.browser_download_url -OutFile ymm4.zip
+          Expand-Archive ymm4.zip -DestinationPath ymm4-host
+          $exe = Get-ChildItem ymm4-host -Recurse -Filter YukkuriMovieMaker.exe | Select-Object -First 1
+          if (-not $exe) { throw 'YukkuriMovieMaker.exe was not found' }
+          "YMM4_DIR=$($exe.Directory.FullName)\" >> $env:GITHUB_ENV
+
+      - name: Find Windows SDK shader tools
+        shell: pwsh
+        run: |
+          $fxc = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter fxc.exe |
+            Where-Object FullName -Like '*\x64\fxc.exe' | Sort-Object FullName -Descending | Select-Object -First 1
+          $include = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\Include" -Recurse -Filter d2d1effecthelpers.hlsli |
+            Select-Object -First 1
+          if (-not $fxc -or -not $include) { throw 'Direct2D shader tools were not found' }
+          "FXC_PATH=$($fxc.FullName)" >> $env:GITHUB_ENV
+          "D2D_INCLUDE=$($include.Directory.FullName)" >> $env:GITHUB_ENV
+
+      - name: Build and verify
+        shell: pwsh
+        run: |
+          dotnet build ymm/SaCoolBlurYmm.csproj -c Release "-p:YMM4DirPath=$env:YMM4_DIR" "-p:FxcPath=$env:FXC_PATH" "-p:D2DIncludePath=$env:D2D_INCLUDE"
+          if ($LASTEXITCODE -ne 0) { throw 'YMM4 build failed' }
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory artifact/SaCoolBlurYmm | Out-Null
+          Copy-Item ymm/bin/Release/net10.0-windows10.0.19041.0/SaCoolBlurYmm.dll artifact/SaCoolBlurYmm/
+          Copy-Item README.md artifact/SaCoolBlurYmm/
+          Compress-Archive artifact/SaCoolBlurYmm SaCoolBlurYmm.zip
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: SaCoolBlurYmm
+          path: SaCoolBlurYmm.zip
+          if-no-files-found: error
+

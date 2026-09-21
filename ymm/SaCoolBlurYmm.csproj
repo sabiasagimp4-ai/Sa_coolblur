@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>SaCoolBlurYmm</AssemblyName>
+    <RootNamespace>SaCoolBlurYmm</RootNamespace>
+    <Deterministic>true</Deterministic>
+    <Version>0.1.0</Version>
+    <PathMap>$(MSBuildProjectDirectory)=/_/</PathMap>
+    <FxcPath Condition="'$(FxcPath)' == ''">$(WindowsSdkBinPath)x64\fxc.exe</FxcPath>
+    <D2DIncludePath Condition="'$(D2DIncludePath)' == ''">$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um</D2DIncludePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <Reference Include="YukkuriMovieMaker.Controls"><HintPath>$(YMM4DirPath)YukkuriMovieMaker.Controls.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="YukkuriMovieMaker.Plugin"><HintPath>$(YMM4DirPath)YukkuriMovieMaker.Plugin.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SharpGen.Runtime"><HintPath>$(YMM4DirPath)SharpGen.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SharpGen.Runtime.COM"><HintPath>$(YMM4DirPath)SharpGen.Runtime.COM.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Vortice.Direct2D1"><HintPath>$(YMM4DirPath)Vortice.Direct2D1.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Vortice.DirectX"><HintPath>$(YMM4DirPath)Vortice.DirectX.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Vortice.Mathematics"><HintPath>$(YMM4DirPath)Vortice.Mathematics.dll</HintPath><Private>false</Private></Reference>
+    <EmbeddedResource Include="$(IntermediateOutputPath)Prepare.cso" LogicalName="SaCoolBlurYmm.Prepare.cso" />
+    <EmbeddedResource Include="$(IntermediateOutputPath)Gather.cso" LogicalName="SaCoolBlurYmm.Gather.cso" />
+  </ItemGroup>
+  <Target Name="CompileShaders" BeforeTargets="PrepareResources">
+    <Error Condition="!Exists('$(FxcPath)')" Text="Windows SDK fxc.exe is required." />
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <Exec Command="&quot;$(FxcPath)&quot; /nologo /WX /I &quot;$(D2DIncludePath)&quot; /D D2D_INPUT_COUNT=1 /T ps_4_0 /E main /Fo &quot;$(IntermediateOutputPath)Prepare.cso&quot; &quot;$(MSBuildProjectDirectory)\Shaders\Prepare.hlsl&quot;" />
+    <Exec Command="&quot;$(FxcPath)&quot; /nologo /WX /I &quot;$(D2DIncludePath)&quot; /D D2D_INPUT_COUNT=3 /T ps_4_0 /E main /Fo &quot;$(IntermediateOutputPath)Gather.cso&quot; &quot;$(MSBuildProjectDirectory)\Shaders\Gather.hlsl&quot;" />
+  </Target>
+</Project>
