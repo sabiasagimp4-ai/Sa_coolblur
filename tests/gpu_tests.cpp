@@ -80,7 +80,7 @@ struct Gpu {
     }
     std::vector<Pixel> readback(ID3D11Texture2D* out,int width,int height) {
         D3D11_TEXTURE2D_DESC d; out->GetDesc(&d); d.Usage=D3D11_USAGE_STAGING; d.BindFlags=0; d.CPUAccessFlags=D3D11_CPU_ACCESS_READ;
-        ComPtr<ID3D11Texture2D> stage; check(dev->CreateTexture2D(&d,nullptr,&stage)); ctx->CopyResource(stage,out);
+        ComPtr<ID3D11Texture2D> stage; check(dev->CreateTexture2D(&d,nullptr,&stage)); ctx->CopyResource(stage.Get(),out);
         D3D11_MAPPED_SUBRESOURCE mapped; check(ctx->Map(stage.Get(),0,D3D11_MAP_READ,0,&mapped));
         std::vector<Pixel> result(width*height);
         for(int y=0;y<height;++y) memcpy(result.data()+y*width,(char*)mapped.pData+y*mapped.RowPitch,width*sizeof(Pixel));
