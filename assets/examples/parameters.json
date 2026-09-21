@@ -1,0 +1,251 @@
+{
+  "source_sha256": "3ef16f16e58bc142b4281267f581ca1ebf580ac26179e58098a7c901d02d890e",
+  "crop_box": [
+    2,
+    1,
+    898,
+    505
+  ],
+  "size": [
+    896,
+    504
+  ],
+  "renderer": "CPU transcription of YMM4 HLSL; not YMM4 application output; no AI imagery",
+  "fixed": {
+    "samples": 512,
+    "linear_light": true,
+    "edge_repeat": true,
+    "threshold": 0.8
+  },
+  "presets": [
+    {
+      "name": "00_original",
+      "label": "Original",
+      "arguments": [
+        4,
+        0,
+        0,
+        0,
+        0,
+        1,
+        50,
+        50,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "01_mild",
+      "label": "Uniform / mild",
+      "arguments": [
+        4,
+        8,
+        25,
+        0,
+        30,
+        1,
+        50,
+        50,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "02_dispersion",
+      "label": "Uniform / dispersion +250",
+      "arguments": [
+        4,
+        20,
+        250,
+        0,
+        30,
+        1,
+        50,
+        50,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "03_reverse",
+      "label": "Uniform / dispersion -250",
+      "arguments": [
+        4,
+        20,
+        -250,
+        0,
+        30,
+        1,
+        50,
+        50,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "04_band",
+      "label": "Linear focus / desks",
+      "arguments": [
+        1,
+        36,
+        150,
+        0,
+        30,
+        1,
+        50,
+        76,
+        80,
+        150,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "05_radial",
+      "label": "Radial focus / chalkboard",
+      "arguments": [
+        2,
+        38,
+        200,
+        0,
+        30,
+        1,
+        61,
+        35,
+        100,
+        170,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "06_inverted",
+      "label": "Radial / inverted",
+      "arguments": [
+        2,
+        38,
+        200,
+        0,
+        30,
+        1,
+        61,
+        35,
+        100,
+        170,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "07_horizontal",
+      "label": "Anamorphic / wide",
+      "arguments": [
+        4,
+        24,
+        200,
+        70,
+        65,
+        0.5,
+        50,
+        50,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "08_vertical",
+      "label": "Anamorphic / tall",
+      "arguments": [
+        4,
+        24,
+        200,
+        70,
+        65,
+        2,
+        50,
+        50,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "09_soft",
+      "label": "Bokeh edge -100 / soft",
+      "arguments": [
+        4,
+        24,
+        100,
+        -100,
+        50,
+        1,
+        50,
+        50,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "10_ring",
+      "label": "Bokeh edge +100 / rim",
+      "arguments": [
+        4,
+        24,
+        100,
+        100,
+        50,
+        1,
+        50,
+        50,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "11_colors",
+      "label": "Custom taps / cyan-magenta-yellow",
+      "arguments": [
+        1,
+        40,
+        250,
+        50,
+        50,
+        1,
+        50,
+        65,
+        70,
+        180,
+        -20,
+        0,
+        1
+      ]
+    }
+  ]
+}
+

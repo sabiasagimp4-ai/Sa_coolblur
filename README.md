@@ -11,11 +11,13 @@ YMM4用の色分散レンズブラー。ぼかしの広がりを3つの色に分
 
 ## パラメータ例
 
-元画像を16:9に整え、同じ構図でパラメータを変えた見た目の参考例です。左上から順に、帯状フォーカス、円形フォーカス＋色分散、全体ぼかし＋アナモルフィック、反転フォーカスを想定しています。
+添付画像をコードで中央クロップし、896×504（正確な16:9）にした入力を使っています。YMM4版のシェーダーと同じ式をCPU側へ転記し、同じVogelサンプル点・リニアライト変換・色分散・ボケ縁の重みでレンダリングしました。画像生成は使っていません。
 
-![Sa_coolblur パラメータ例](assets/sa_coolblur_demo.jpg)
+![コードでレンダリングしたSa_coolblurの16:9比較](assets/examples/comparison.jpg)
 
-実際の見た目は、半径・分散量・ボケの縁・縦横比・ハイライトブースト・ピント位置によって変化します。
+左上は原画、右上は帯状フォーカス、左下は円形フォーカス＋色分散、右下はアナモルフィックぼかしです。各パネルに実際に使った半径（R）、分散量（D）、ボケの縁（Edge）、ハイライト（Hi）、縦横比（A）を表示しています。
+
+再生成用コードは [tools/render_examples.py](tools/render_examples.py) と [tools/render_reference.cpp](tools/render_reference.cpp)、全設定値は [parameters.json](assets/examples/parameters.json) にあります。
 
 ## 補足
 
