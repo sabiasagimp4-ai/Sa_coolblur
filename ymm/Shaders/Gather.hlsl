@@ -29,8 +29,13 @@ float focusAmount(float2 p)
     else if (mode < 3.5)
     {
 
-        float2 uv = (p - bounds.xy) / max(bounds.zw - bounds.xy, 1);
-        float2 dp = clamp(depthBounds.xy + uv * (depthBounds.zw - depthBounds.xy), depthBounds.xy + .5, depthBounds.zw - .5);
+        // BuildDepthMap in the source plugin maps mismatched sizes with
+        // sx=floor(x*depthWidth/sourceWidth), not centre-based resampling.
+        float2 sourceCell = floor(p - bounds.xy);
+        float2 sourceSize = max(bounds.zw - bounds.xy, 1);
+        float2 depthSize = max(depthBounds.zw - depthBounds.xy, 1);
+        float2 depthCell = floor(sourceCell * depthSize / sourceSize);
+        float2 dp = clamp(depthBounds.xy + depthCell + .5, depthBounds.xy + .5, depthBounds.zw - .5);
         float4 duv = D2DGetInputCoordinate(1);
         float4 dc = InputTexture1.SampleLevel(InputSampler1, duv.xy + duv.zw * (dp - p), 0);
         float depth = dot(dc.rgb, float3(.2126, .7152, .0722));
@@ -116,7 +121,9 @@ D2D_PS_ENTRY(main)
     float2 p = D2DGetScenePosition().xy;
     float4 original = D2DGetInput(2);
     float amount = focusAmount(p);
-    if (showMap > .5) return float4(amount.xxx * original.a, original.a);
+    // The source CPU diagnostic writes the raw amount to RGB and preserves
+    // alpha independently, including RGB values greater than alpha.
+    if (showMap > .5) return float4(amount.xxx, original.a);
     if (amount <= 0 || maxRadius < .5) return original;
     float radius = amount * maxRadius;
     float4 mid = gather(p, radius);

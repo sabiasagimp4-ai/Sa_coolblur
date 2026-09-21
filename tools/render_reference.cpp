@@ -72,7 +72,7 @@ float gather(int x, int y, float radius, int c, const Params& p)
         int count = radius <= 16 ? 64 : radius <= 40 ? 128 : p.quality;
         for (int i = 0; i < count; ++i)
         {
-            float4 s = count <= 64 ? samples64[i] : count <= 128 ? samples128[i] : samples512[i];
+            float4 s = count <= 64 ? samples64[i] : count <= 128 ? samples128[i] : count <= 256 ? samples256[i] : samples512[i];
             float w = weight(p.edge, s.z, s.w);
             sum += bilinearPrepared(x + s.x * rx, y + s.y * ry, c) * w;
             total += w;
@@ -199,7 +199,8 @@ std::vector<RGB> render(const Params& p, const Weights& weights)
     }
 
     // CoolBlurCompositeCUDA: restore full resolution and bilinear-upsample
-    // with gx = (x + .5) / factor - .5, then blend by full-res focus amount.
+    // with gx = (x + .5) / factor - .5, then use the same 4px transition
+    // ramp as CoolBlurCompositeCUDA.
     W = fullW; H = fullH; prepared = std::move(fullPrepared);
     std::vector<RGB> out = original;
     #pragma omp parallel for schedule(dynamic, 1)
@@ -208,7 +209,9 @@ std::vector<RGB> render(const Params& p, const Weights& weights)
         float amount = focusAmount(x + .5f, y + .5f, fullCenterX, fullCenterY, p.width, p.feather, p);
         if (amount <= 0 || p.radius < .5f) continue;
         float gx = (x + .5f) / factor - .5f, gy = (y + .5f) / factor - .5f;
-        out[y * fullW + x] = lerp(original[y * fullW + x], bilinearImage(lowBlur, lowW, lowH, gx, gy), amount);
+        float e1 = p.radius > 1 ? 4 / p.radius : 1;
+        float blend = amount >= e1 ? 1 : amount / e1;
+        out[y * fullW + x] = lerp(original[y * fullW + x], bilinearImage(lowBlur, lowW, lowH, gx, gy), blend);
     }
     return out;
 }

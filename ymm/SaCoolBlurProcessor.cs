@@ -115,7 +115,7 @@ internal sealed class SaCoolBlurProcessor : IVideoEffectProcessor
         _composite.CenterX = centerX; _composite.CenterY = centerY;
         _composite.Zone = zone; _composite.Feather = feather; _composite.Angle = angle;
         _composite.Mode = mode; _composite.Invert = _item.Invert ? 1 : 0;
-        _composite.Factor = downsample;
+        _composite.Factor = downsample; _composite.MaxRadius = radius;
         UpdateDepth(_item.Mode == FocusMode.Depth ? _item.DepthFile : "");
         _gather.HasDepth = _depth is null ? 0 : 1;
         using var blur = downsample > 1 ? _lowGather.Output : _gather.Output;

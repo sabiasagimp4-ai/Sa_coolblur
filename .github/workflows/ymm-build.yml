@@ -54,6 +54,10 @@ jobs:
         shell: pwsh
         run: ./tests/run-gpu-tests.ps1
 
+      - name: Test Web model
+        shell: pwsh
+        run: node --test tests/web_model.test.mjs
+
       - name: Package
         shell: pwsh
         run: |

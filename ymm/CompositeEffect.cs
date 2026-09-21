@@ -21,6 +21,7 @@ internal sealed class CompositeEffect(IGraphicsDevicesAndContext devices)
     public float Mode { set => SetValue(5, value); }
     public float Invert { set => SetValue(6, value); }
     public float Factor { set => SetValue(7, value); }
+    public float MaxRadius { set => SetValue(8, value); }
 
     [CustomEffect(2)]
     private sealed class Impl : D2D1CustomShaderEffectImplBase<Impl>
@@ -38,6 +39,7 @@ internal sealed class CompositeEffect(IGraphicsDevicesAndContext devices)
         [CustomEffectProperty(PropertyType.Float, 5)] public float Mode { get => _c.Mode; set { _c.Mode = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 6)] public float Invert { get => _c.Invert; set { _c.Invert = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 7)] public float Factor { get => _c.Factor; set { _c.Factor = Math.Clamp(float.IsFinite(value) ? value : 1, 1, 4); UpdateConstants(); } }
+        [CustomEffectProperty(PropertyType.Float, 8)] public float MaxRadius { get => _c.MaxRadius; set { _c.MaxRadius = Math.Max(float.IsFinite(value) ? value : 0, 0); UpdateConstants(); } }
 
         protected override void UpdateConstants()
         {
@@ -73,6 +75,7 @@ internal sealed class CompositeEffect(IGraphicsDevicesAndContext devices)
         {
             public float CenterX, CenterY, Zone, Feather;
             public float Angle, Mode, Invert, Factor;
+            public float MaxRadius, Reserved0, Reserved1, Reserved2;
             public float LowLeft, LowTop, LowRight, LowBottom;
             public float RawLeft, RawTop, RawRight, RawBottom;
         }

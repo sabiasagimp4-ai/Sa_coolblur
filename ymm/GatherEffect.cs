@@ -92,6 +92,9 @@ internal sealed class GatherEffect(IGraphicsDevicesAndContext devices)
         {
             drawInformation?.SetOutputBuffer(BufferPrecision.PerChannel32Float, ChannelDepth.Four);
             drawInformation?.SetInputDescription(0, new InputDescription { Filter = Filter.MinMagMipLinear, LevelOfDetailCount = 1 });
+            // The original CPU depth-map conversion uses nearest-neighbour
+            // lookup.  Sampling an exact source-pixel centre keeps this exact.
+            drawInformation?.SetInputDescription(1, new InputDescription { Filter = Filter.MinMagMipPoint, LevelOfDetailCount = 1 });
             drawInformation?.SetPixelShaderConstantBuffer(_c);
         }
         public override void MapOutputRectToInputRects(RawRect outputRect, RawRect[] inputRects)

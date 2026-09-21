@@ -4,6 +4,7 @@
 
 float centerX, centerY, zone, feather;
 float angle, mode, invertFocus, factor;
+float maxRadius, reserved0, reserved1, reserved2;
 float4 lowBounds, rawBounds;
 
 float focusAmount(float2 p)
@@ -34,6 +35,11 @@ D2D_PS_ENTRY(main)
     // With factor==1 input 0 is the normal full-resolution Gather output;
     // returning it through the same sample path avoids an FXC false-positive
     // in D2DGetInput(0)'s generated helper implementation.
-    float blend = factor < 1.5 ? 1 : focusAmount(p);
+    float amount = focusAmount(p);
+    // CoolBlurCompositeCUDA keeps the full-resolution source while the
+    // effective radius is below 4 px, then switches completely to the
+    // upsampled low-resolution blur.  This avoids softening the focus band.
+    float e1 = maxRadius > 1 ? 4 / maxRadius : 1;
+    float blend = factor < 1.5 ? 1 : (amount <= 0 ? 0 : (amount >= e1 ? 1 : amount / e1));
     return lerp(raw, low, blend);
 }

@@ -224,7 +224,7 @@ void main() {
   vec4 original = texelFetch(uOriginal, ivec2(gl_FragCoord.xy), 0);
   float amount = focusAmount(p);
   if (uShowMap) {
-    outColor = vec4(vec3(amount * original.a), original.a);
+    outColor = vec4(vec3(amount), original.a);
     return;
   }
   if (amount <= 0.0 || uRadius < 0.5) { outColor = original; return; }
@@ -268,6 +268,7 @@ uniform float uAngle;
 uniform float uMode;
 uniform bool uInvert;
 uniform int uFactor;
+uniform float uMaxRadius;
 out vec4 outColor;
 float focusAmount(vec2 p) {
   vec2 center = uRawSize * vec2(uCenterX, uCenterY) / 100.0;
@@ -284,7 +285,9 @@ void main() {
   vec2 q = p / f;
   vec2 uv = vec2(q.x / uBlurSize.x, 1.0 - q.y / uBlurSize.y);
   vec4 blurred = texture(uBlur, uv);
-  float blend = uFactor == 1 ? 1.0 : focusAmount(p);
+  float amount = focusAmount(p);
+  float e1 = uMaxRadius > 1.0 ? 4.0 / uMaxRadius : 1.0;
+  float blend = uFactor == 1 ? 1.0 : (amount <= 0.0 ? 0.0 : (amount >= e1 ? 1.0 : amount / e1));
   outColor = mix(raw, blurred, blend);
 }`;
 
@@ -466,7 +469,10 @@ class CoolBlurRenderer {
     if (!this.imageInfo) return null;
     const gl = this.gl;
     const { width, height, scale } = this.imageInfo;
-    const factor = chooseDownsampleFactor(params.mode, params.radius, params.downsample, params.showMap);
+    // AE scales pixel-valued parameters to the current render resolution
+    // before selecting the CUDA downsample factor.
+    const effectiveRadius = params.radius * scale;
+    const factor = chooseDownsampleFactor(params.mode, effectiveRadius, params.downsample, params.showMap);
     this.ensureTargets(width, height, factor);
     const lowWidth = Math.ceil(width / factor);
     const lowHeight = Math.ceil(height / factor);
@@ -545,6 +551,7 @@ class CoolBlurRenderer {
     this.setUniform(program, "uMode", Number(params.mode));
     this.setUniform(program, "uInvert", params.invert);
     this.setUniform(program, "uFactor", factor);
+    this.setUniform(program, "uMaxRadius", effectiveRadius);
     this.draw(program, null, width, height);
     gl.finish();
     return { factor, width, height, scale, floatTarget: this.floatTarget };
