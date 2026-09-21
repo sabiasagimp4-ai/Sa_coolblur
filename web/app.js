@@ -757,6 +757,8 @@ async function start() {
     requestRender(true);
   } catch (error) {
     loading.textContent = "起動できませんでした";
+    loading.classList.add("hidden");
+    precision.textContent = "—";
     setMessage(error.message, true);
     console.error(error);
   }
