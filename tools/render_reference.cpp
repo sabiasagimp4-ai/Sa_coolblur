@@ -27,7 +27,7 @@ struct Params
     int mode;
     float radius, disp, edge, boost, aspect, cx, cy, width, feather, angle;
     bool invert;
-    int color;
+    int color, quality;
 };
 
 int W, H;
@@ -69,7 +69,7 @@ float gather(int x, int y, float radius, int c, const Params& p)
     }
     else
     {
-        int count = radius <= 16 ? 64 : radius <= 40 ? 128 : 512; // README uses High quality.
+        int count = radius <= 16 ? 64 : radius <= 40 ? 128 : p.quality;
         for (int i = 0; i < count; ++i)
         {
             float4 s = count <= 64 ? samples64[i] : count <= 128 ? samples128[i] : samples512[i];
@@ -217,7 +217,7 @@ int main(int argc, char** argv)
 {
     try
     {
-        if (argc != 16) throw std::runtime_error("input.ppm output.ppm mode radius dispersion edge boost aspect cx cy width feather angle invert color");
+        if (argc != 16 && argc != 17) throw std::runtime_error("input.ppm output.ppm mode radius dispersion edge boost aspect cx cy width feather angle invert color [quality]");
         std::ifstream f(argv[1], std::ios::binary);
         std::string magic;
         int maxval;
@@ -227,10 +227,12 @@ int main(int argc, char** argv)
         std::vector<unsigned char> bytes(W * H * 3);
         f.read((char*)bytes.data(), bytes.size());
         if (!f) throw std::runtime_error("Short input");
+        int quality = argc == 17 ? std::stoi(argv[16]) : 256;
+        quality = quality <= 128 ? 128 : quality <= 256 ? 256 : 512;
         Params p{std::stoi(argv[3]), std::stof(argv[4]), std::stof(argv[5]) * .003f, std::stof(argv[6]) * .01f,
                  std::stof(argv[7]), std::stof(argv[8]), std::stof(argv[9]), std::stof(argv[10]), std::stof(argv[11]),
                  std::stof(argv[12]), std::stof(argv[13]) * 3.14159265358979323846f / 180, std::stoi(argv[14]) != 0,
-                 std::stoi(argv[15])};
+                 std::stoi(argv[15]), quality};
         if (p.mode != 1 && p.mode != 2 && p.mode != 4) throw std::runtime_error("Examples support linear/radial/uniform only");
         original.resize(W * H);
         prepared.resize(W * H);

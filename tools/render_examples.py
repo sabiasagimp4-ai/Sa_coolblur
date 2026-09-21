@@ -2,6 +2,7 @@
 Requires Python/Pillow and g++ (OpenMP). Run with the original JPEG path.
 Opaque RGB input, clamped edges, linear light, original hybrid Vogel tiers,
 and the source plugin's automatic downsample path (32px: 2x, 96px: 4x).
+The default quality is the original plugin's Standard/256 setting.
 """
 from pathlib import Path
 import hashlib, json, os, subprocess, sys, tempfile
@@ -32,7 +33,7 @@ def main():
  crop=im.crop(box);crop.save(OUT/'source_16x9.png')
  metadata={'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'crop_box':box,'size':[w,h],
  'renderer':'CPU transcription of the source CUDA GPU path and YMM4 shader graph; not an AE or YMM4 application capture; no AI imagery',
- 'fixed':{'quality':512,'hybrid_samples':{'radius<=16':64,'radius<=40':128,'otherwise':512},'downsample':'auto: 2x at radius>=32, 4x at radius>=96','linear_light':True,'edge_repeat':True,'threshold':.8},'presets':[]}
+ 'fixed':{'quality':256,'hybrid_samples':{'radius<=16':64,'radius<=40':128,'otherwise':'selected quality (128/256/512)'},'downsample':'auto: 2x at radius>=32, 4x at radius>=96','linear_light':True,'edge_repeat':True,'threshold':.8},'presets':[]}
  env=dict(os.environ,OMP_NUM_THREADS='4')
  with tempfile.TemporaryDirectory(prefix='coolblur-render-') as tmp:
   tmp=Path(tmp)
