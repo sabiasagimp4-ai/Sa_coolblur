@@ -25,11 +25,15 @@
     <Reference Include="Vortice.Mathematics"><HintPath>$(YMM4DirPath)Vortice.Mathematics.dll</HintPath><Private>false</Private></Reference>
     <EmbeddedResource Include="$(IntermediateOutputPath)Prepare.cso" LogicalName="SaCoolBlurYmm.Prepare.cso" />
     <EmbeddedResource Include="$(IntermediateOutputPath)Gather.cso" LogicalName="SaCoolBlurYmm.Gather.cso" />
+    <EmbeddedResource Include="$(IntermediateOutputPath)Downsample.cso" LogicalName="SaCoolBlurYmm.Downsample.cso" />
+    <EmbeddedResource Include="$(IntermediateOutputPath)Composite.cso" LogicalName="SaCoolBlurYmm.Composite.cso" />
   </ItemGroup>
   <Target Name="CompileShaders" BeforeTargets="PrepareResources">
     <Error Condition="!Exists('$(FxcPath)')" Text="Windows SDK fxc.exe is required." />
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <Exec Command="&quot;$(FxcPath)&quot; /nologo /WX /I &quot;$(D2DIncludePath)&quot; /D D2D_INPUT_COUNT=1 /T ps_4_0 /E main /Fo &quot;$(IntermediateOutputPath)Prepare.cso&quot; &quot;$(MSBuildProjectDirectory)\Shaders\Prepare.hlsl&quot;" />
-    <Exec Command="&quot;$(FxcPath)&quot; /nologo /WX /I &quot;$(D2DIncludePath)&quot; /D D2D_INPUT_COUNT=3 /T ps_4_0 /E main /Fo &quot;$(IntermediateOutputPath)Gather.cso&quot; &quot;$(MSBuildProjectDirectory)\Shaders\Gather.hlsl&quot;" />
+    <Exec Command="&quot;$(FxcPath)&quot; /nologo /WX /I &quot;$(D2DIncludePath)&quot; /D D2D_INPUT_COUNT=4 /T ps_4_0 /E main /Fo &quot;$(IntermediateOutputPath)Gather.cso&quot; &quot;$(MSBuildProjectDirectory)\Shaders\Gather.hlsl&quot;" />
+    <Exec Command="&quot;$(FxcPath)&quot; /nologo /WX /I &quot;$(D2DIncludePath)&quot; /D D2D_INPUT_COUNT=1 /T ps_4_0 /E main /Fo &quot;$(IntermediateOutputPath)Downsample.cso&quot; &quot;$(MSBuildProjectDirectory)\Shaders\Downsample.hlsl&quot;" />
+    <Exec Command="&quot;$(FxcPath)&quot; /nologo /WX /I &quot;$(D2DIncludePath)&quot; /D D2D_INPUT_COUNT=2 /T ps_4_0 /E main /Fo &quot;$(IntermediateOutputPath)Composite.cso&quot; &quot;$(MSBuildProjectDirectory)\Shaders\Composite.hlsl&quot;" />
   </Target>
 </Project>

@@ -47,6 +47,11 @@ struct Gpu {
         check(dev->CreatePixelShader(p->GetBufferPointer(),p->GetBufferSize(),nullptr,&prep));
         p=compile(source("Gather"),"ps_4_0");
         check(dev->CreatePixelShader(p->GetBufferPointer(),p->GetBufferSize(),nullptr,&gather));
+        // Also compile the production low-resolution stages.  Their graph
+        // mapping is exercised by the YMM host; WARP catches shader syntax
+        // and constant-buffer layout regressions here.
+        (void)compile(source("Downsample"),"ps_4_0");
+        (void)compile(source("Composite"),"ps_4_0");
         D3D11_SAMPLER_DESC sd={}; sd.Filter=D3D11_FILTER_MIN_MAG_MIP_LINEAR;
         sd.AddressU=sd.AddressV=sd.AddressW=D3D11_TEXTURE_ADDRESS_CLAMP; sd.MaxLOD=D3D11_FLOAT32_MAX;
         check(dev->CreateSamplerState(&sd,&sampler));
@@ -58,11 +63,11 @@ struct Gpu {
         D3D11_SUBRESOURCE_DATA data={}; if(pixels) {data.pSysMem=pixels->data(); data.SysMemPitch=W*sizeof(Pixel);}
         ComPtr<ID3D11Texture2D> t; check(dev->CreateTexture2D(&d,pixels?&data:nullptr,&t)); return t;
     }
-    ComPtr<ID3D11Texture2D> draw(ID3D11PixelShader* ps,const std::array<ID3D11Texture2D*,3>& inputs,const float* constants,UINT bytes) {
+    ComPtr<ID3D11Texture2D> draw(ID3D11PixelShader* ps,const std::array<ID3D11Texture2D*,4>& inputs,const float* constants,UINT bytes) {
         auto out=texture(); ComPtr<ID3D11RenderTargetView> rtv; check(dev->CreateRenderTargetView(out.Get(),nullptr,&rtv));
-        std::array<ComPtr<ID3D11ShaderResourceView>,3> views;
-        ID3D11ShaderResourceView* raw[3]; ID3D11SamplerState* ss[]={sampler.Get(),sampler.Get(),sampler.Get()};
-        for(int i=0;i<3;++i) {check(dev->CreateShaderResourceView(inputs[i],nullptr,&views[i])); raw[i]=views[i].Get();}
+        std::array<ComPtr<ID3D11ShaderResourceView>,4> views;
+        ID3D11ShaderResourceView* raw[4]; ID3D11SamplerState* ss[]={sampler.Get(),sampler.Get(),sampler.Get(),sampler.Get()};
+        for(int i=0;i<4;++i) {check(dev->CreateShaderResourceView(inputs[i],nullptr,&views[i])); raw[i]=views[i].Get();}
         D3D11_BUFFER_DESC bd={}; bd.ByteWidth=bytes; bd.Usage=D3D11_USAGE_IMMUTABLE; bd.BindFlags=D3D11_BIND_CONSTANT_BUFFER;
         D3D11_SUBRESOURCE_DATA data={}; data.pSysMem=constants;
         ComPtr<ID3D11Buffer> cb; check(dev->CreateBuffer(&bd,&data,&cb));
@@ -71,14 +76,14 @@ struct Gpu {
         ctx->VSSetShader(vs.Get(),nullptr,0); ctx->PSSetShader(ps,nullptr,0);
         ctx->PSSetConstantBuffers(0,1,cb.GetAddressOf()); ctx->PSSetShaderResources(0,3,raw); ctx->PSSetSamplers(0,3,ss);
         ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST); ctx->Draw(3,0);
-        ID3D11ShaderResourceView* empty[3]={}; ctx->PSSetShaderResources(0,3,empty); ctx->OMSetRenderTargets(0,nullptr,nullptr);
+        ID3D11ShaderResourceView* empty[4]={}; ctx->PSSetShaderResources(0,4,empty); ctx->OMSetRenderTargets(0,nullptr,nullptr);
         return out;
     }
-    std::vector<Pixel> render(const std::vector<Pixel>& pixels,std::array<float,44> c,const std::vector<Pixel>* depth=nullptr) {
+    std::vector<Pixel> render(const std::vector<Pixel>& pixels,std::array<float,48> c,const std::vector<Pixel>* depth=nullptr) {
         auto input=texture(&pixels), dt=texture(depth?depth:&pixels);
         std::array<float,4> pc={c[12],c[13],c[14],0};
-        auto prepared=draw(prep.Get(),{input.Get(),input.Get(),input.Get()},pc.data(),sizeof(pc));
-        auto out=draw(gather.Get(),{prepared.Get(),dt.Get(),input.Get()},c.data(),sizeof(c));
+        auto prepared=draw(prep.Get(),{input.Get(),input.Get(),input.Get(),input.Get()},pc.data(),sizeof(pc));
+        auto out=draw(gather.Get(),{prepared.Get(),dt.Get(),input.Get(),input.Get()},c.data(),sizeof(c));
         D3D11_TEXTURE2D_DESC d; out->GetDesc(&d); d.Usage=D3D11_USAGE_STAGING; d.BindFlags=0; d.CPUAccessFlags=D3D11_CPU_ACCESS_READ;
         ComPtr<ID3D11Texture2D> stage; check(dev->CreateTexture2D(&d,nullptr,&stage)); ctx->CopyResource(stage.Get(),out.Get());
         D3D11_MAPPED_SUBRESOURCE mapped; check(ctx->Map(stage.Get(),0,D3D11_MAP_READ,0,&mapped));
@@ -87,10 +92,10 @@ struct Gpu {
         ctx->Unmap(stage.Get(),0); return result;
     }
 };
-std::array<float,44> defaults() {
+std::array<float,48> defaults() {
     return {50,50,0,1, 0,4,0,0, 8,.075f,0,1, 2.2f,.8f,1,1,
             .5f,.1f,.2f,0, 128,0,0,0, 1,0,0,0, 0,1,0,0, 0,0,1,0,
-            0,0,W,H, 0,0,W,H};
+            0,0,W,H, 0,0,W,H, 0,0,W,H};
 }
 void assertNear(float x,float y,float tol=3e-4f) {if(!std::isfinite(x)||std::abs(x-y)>tol) throw std::runtime_error("Mismatch: "+std::to_string(x)+" != "+std::to_string(y));}
 void imageNear(const std::vector<Pixel>& a,const std::vector<Pixel>& b,float tol=3e-4f) {for(size_t i=0;i<a.size();++i) for(int c=0;c<4;++c) assertNear(a[i][c],b[i][c],tol);}

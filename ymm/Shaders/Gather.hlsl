@@ -8,13 +8,20 @@ float angle, mode, invertFocus, showMap;
 float maxRadius, dispersion, edge, anamorphic;
 float gamma, pivot, linearLight, repeatEdge;
 float focusDistance, focusRange, depthFeather, hasDepth;
-float sampleCount, reserved0, reserved1, reserved2;
+float sampleCount, downsampleScale, reserved1, reserved2;
 float4 innerColor, middleColor, outerColor;
 float4 bounds, depthBounds;
+float4 focusBounds;
 
 float focusAmount(float2 p)
 {
     float2 center = bounds.xy + (bounds.zw - bounds.xy) * float2(centerX, centerY) / 100;
+    // CUDA's reduced-resolution path divides the source-space center by the
+    // downsample factor; it does not re-normalize it against the rounded-up
+    // low-resolution image dimensions.  The fourth input supplies the source
+    // rectangle so the same calculation survives odd-sized frames.
+    if (downsampleScale > 1.5)
+        center = bounds.xy + (focusBounds.zw - focusBounds.xy) * float2(centerX, centerY) / (100 * downsampleScale);
     float2 d = p - center;
     float a = 1;
     if (mode < 1.5) a = saturate((abs(-sin(angle) * d.x + cos(angle) * d.y) - zone * .5) / max(feather, 1e-6));

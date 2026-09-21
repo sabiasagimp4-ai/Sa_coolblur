@@ -29,7 +29,10 @@ internal sealed class GatherEffect(IGraphicsDevicesAndContext devices)
     public float DepthFeather { set => SetValue(18, value); }
     public float HasDepth { set => SetValue(19, value); }
     public float Samples { set => SetValue(20, value); }
-    public float Reserved0 { set => SetValue(21, value); }
+    // The original CUDA path runs the low-resolution gather with focus
+    // coordinates expressed in the full-resolution content rectangle.
+    // Keep that rectangle as input 3 and use this scale only for that path.
+    public float DownsampleScale { set => SetValue(21, value); }
     public float Reserved1 { set => SetValue(22, value); }
     public float Reserved2 { set => SetValue(23, value); }
     public float InnerR { set => SetValue(24, value); }
@@ -44,7 +47,7 @@ internal sealed class GatherEffect(IGraphicsDevicesAndContext devices)
     public float OuterG { set => SetValue(33, value); }
     public float OuterB { set => SetValue(34, value); }
     public float Reserved5 { set => SetValue(35, value); }
-    [CustomEffect(3)]
+    [CustomEffect(4)]
     private sealed class Impl : D2D1CustomShaderEffectImplBase<Impl>
     {
         private Constants _c;
@@ -70,7 +73,7 @@ internal sealed class GatherEffect(IGraphicsDevicesAndContext devices)
         [CustomEffectProperty(PropertyType.Float, 18)] public float DepthFeather { get => _c.DepthFeather; set { _c.DepthFeather = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 19)] public float HasDepth { get => _c.HasDepth; set { _c.HasDepth = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 20)] public float Samples { get => _c.Samples; set { _c.Samples = value; UpdateConstants(); } }
-        [CustomEffectProperty(PropertyType.Float, 21)] public float Reserved0 { get => _c.Reserved0; set { _c.Reserved0 = value; UpdateConstants(); } }
+        [CustomEffectProperty(PropertyType.Float, 21)] public float DownsampleScale { get => _c.DownsampleScale; set { _c.DownsampleScale = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 22)] public float Reserved1 { get => _c.Reserved1; set { _c.Reserved1 = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 23)] public float Reserved2 { get => _c.Reserved2; set { _c.Reserved2 = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 24)] public float InnerR { get => _c.InnerR; set { _c.InnerR = value; UpdateConstants(); } }
@@ -98,26 +101,33 @@ internal sealed class GatherEffect(IGraphicsDevicesAndContext devices)
             inputRects[0] = _bounds;
             inputRects[1] = _depthBounds;
             inputRects[2] = outputRect;
+            // Input 3 is never sampled, but its complete rectangle is needed
+            // to reproduce CUDA's full-resolution focus coordinates when the
+            // actual gather input is downsampled.
+            inputRects[3] = _focusBounds;
         }
-        private RawRect _bounds, _depthBounds;
+        private RawRect _bounds, _depthBounds, _focusBounds;
         public override void MapInputRectsToOutputRect(RawRect[] inputRects, RawRect[] inputOpaqueSubRects, out RawRect outputRect, out RawRect outputOpaqueSubRect)
         {
             _bounds = inputRects[2];
             _depthBounds = inputRects[1];
+            _focusBounds = inputRects[3];
             outputRect = _bounds;
             outputOpaqueSubRect = default;
             _c.Left = _bounds.Left; _c.Top = _bounds.Top;
             _c.Right = _bounds.Right; _c.Bottom = _bounds.Bottom;
             _c.DepthLeft = _depthBounds.Left; _c.DepthTop = _depthBounds.Top;
             _c.DepthRight = _depthBounds.Right; _c.DepthBottom = _depthBounds.Bottom;
+            _c.FocusLeft = _focusBounds.Left; _c.FocusTop = _focusBounds.Top;
+            _c.FocusRight = _focusBounds.Right; _c.FocusBottom = _focusBounds.Bottom;
             UpdateConstants();
         }
         public override RawRect MapInvalidRect(int inputIndex, RawRect invalidInputRect) => _bounds;
         [StructLayout(LayoutKind.Sequential)]
         private struct Constants
         {
-            public float CenterX, CenterY, Zone, Feather, Angle, Mode, Invert, ShowMap, Radius, Dispersion, Edge, Anamorphic, Gamma, Pivot, Linear, Repeat, Distance, Range, DepthFeather, HasDepth, Samples, Reserved0, Reserved1, Reserved2, InnerR, InnerG, InnerB, Reserved3, MiddleR, MiddleG, MiddleB, Reserved4, OuterR, OuterG, OuterB, Reserved5;
-            public float Left, Top, Right, Bottom, DepthLeft, DepthTop, DepthRight, DepthBottom;
+            public float CenterX, CenterY, Zone, Feather, Angle, Mode, Invert, ShowMap, Radius, Dispersion, Edge, Anamorphic, Gamma, Pivot, Linear, Repeat, Distance, Range, DepthFeather, HasDepth, Samples, DownsampleScale, Reserved1, Reserved2, InnerR, InnerG, InnerB, Reserved3, MiddleR, MiddleG, MiddleB, Reserved4, OuterR, OuterG, OuterB, Reserved5;
+            public float Left, Top, Right, Bottom, DepthLeft, DepthTop, DepthRight, DepthBottom, FocusLeft, FocusTop, FocusRight, FocusBottom;
         }
     }
 }

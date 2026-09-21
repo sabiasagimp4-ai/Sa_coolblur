@@ -78,6 +78,12 @@ public sealed class SaCoolBlurEffect : VideoEffectBase
     public BlurQuality Quality { get => _Quality; set => Set(ref _Quality, value); }
     private BlurQuality _Quality = BlurQuality.Balanced;
 
+    [Display(Name = "ダウンサンプル")]
+    [EnumComboBox]
+    public DownsampleMode Downsample { get => _Downsample; set => Set(ref _Downsample, value); }
+    // AE GPU版の既定値と同じ。半径32以上で2x、96以上で4xになる。
+    private DownsampleMode _Downsample = DownsampleMode.Auto;
+
     [Display(Name = "ピントを反転")]
     [ToggleSlider]
     public bool Invert { get => _Invert; set => Set(ref _Invert, value); }
@@ -134,4 +140,12 @@ public enum BlurQuality
     [Display(Name = "高速（128）")] Fast = 128,
     [Display(Name = "標準（256）")] Balanced = 256,
     [Display(Name = "高品質（512）")] High = 512,
+}
+public enum DownsampleMode
+{
+    [Display(Name = "自動")] Auto = 0,
+    [Display(Name = "なし（原寸）")] Off = 1,
+    [Display(Name = "2倍")] X2 = 2,
+    [Display(Name = "3倍")] X3 = 3,
+    [Display(Name = "4倍")] X4 = 4,
 }

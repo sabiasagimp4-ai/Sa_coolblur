@@ -1,18 +1,24 @@
 {
-  "source_sha256": "3ef16f16e58bc142b4281267f581ca1ebf580ac26179e58098a7c901d02d890e",
+  "source_sha256": "6b57395880b0b59299b660d2d230ed1f71f34fd4f3fa482e1b73a6baae56c359",
   "crop_box": [
-    2,
-    1,
-    898,
-    505
+    0,
+    0,
+    896,
+    504
   ],
   "size": [
     896,
     504
   ],
-  "renderer": "CPU transcription of YMM4 HLSL; not YMM4 application output; no AI imagery",
+  "renderer": "CPU transcription of the source CUDA GPU path and YMM4 shader graph; not an AE or YMM4 application capture; no AI imagery",
   "fixed": {
-    "samples": 512,
+    "quality": 512,
+    "hybrid_samples": {
+      "radius<=16": 64,
+      "radius<=40": 128,
+      "otherwise": 512
+    },
+    "downsample": "auto: 2x at radius>=32, 4x at radius>=96",
     "linear_light": true,
     "edge_repeat": true,
     "threshold": 0.8
