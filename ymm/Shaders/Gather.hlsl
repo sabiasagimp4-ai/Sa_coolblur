@@ -21,14 +21,16 @@ float focusAmount(float2 p)
     else if (mode < 2.5) a = saturate((length(d) - zone) / max(feather, 1e-6));
     else if (mode < 3.5)
     {
-        if (hasDepth < .5) return 0;
+
         float2 uv = (p - bounds.xy) / max(bounds.zw - bounds.xy, 1);
         float2 dp = clamp(depthBounds.xy + uv * (depthBounds.zw - depthBounds.xy), depthBounds.xy + .5, depthBounds.zw - .5);
-        float4 dc = D2DSampleInputAtPosition(1, dp);
+        float4 duv = D2DGetInputCoordinate(1);
+        float4 dc = InputTexture1.SampleLevel(InputSampler1, duv.xy + duv.zw * (dp - p), 0);
         float depth = dot(dc.rgb, float3(.2126, .7152, .0722));
         a = saturate((abs(depth - focusDistance) - focusRange * .5) / max(depthFeather, 1e-6));
     }
-    return invertFocus > .5 ? 1 - a : a;
+    float result = invertFocus > .5 ? 1 - a : a;
+    return mode >= 2.5 && mode < 3.5 && hasDepth < .5 ? 0 : result;
 }
 float weight(float rn, float rn2)
 {
@@ -38,8 +40,6 @@ float4 fetch(float2 p, float2 offset)
 {
     float2 q = p + offset;
     if (repeatEdge > .5) q = clamp(q, bounds.xy + .5, bounds.zw - .5);
-    // Outside the half-pixel border, all bilinear contributors are zero.
-    else if (any(q <= bounds.xy - .5) || any(q >= bounds.zw + .5)) return 0;
     float coverage = 1;
     if (repeatEdge < .5)
     {
@@ -53,7 +53,9 @@ float4 fetch(float2 p, float2 offset)
 }
 float4 gather(float2 p, float radius)
 {
-    if (radius < .5) return fetch(p, 0);
+    float4 result = fetch(p, 0);
+    if (radius >= .5)
+    {
     float aspect = sqrt(clamp(anamorphic, .25, 4));
     float2 axes = max(float2(radius / aspect, radius * aspect), .5);
     int2 ir = (int2)ceil(axes);
@@ -78,7 +80,7 @@ float4 gather(float2 p, float radius)
         int count = (int)sampleCount;
         [loop] for (int i = 0; i < count; ++i)
         {
-            float4 s;
+            float4 s = 0;
             if (count <= 128) s = samples128[i];
             else if (count <= 256) s = samples256[i];
             else s = samples512[i];
@@ -87,7 +89,9 @@ float4 gather(float2 p, float radius)
             total += w;
         }
     }
-    return total > 0 ? sum / total : fetch(p, 0);
+    if (total > 0) result = sum / total;
+    }
+    return result;
 }
 D2D_PS_ENTRY(main)
 {
