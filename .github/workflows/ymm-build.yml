@@ -21,8 +21,10 @@ jobs:
 
       - name: Download latest YMM4 Lite
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          $release = Invoke-RestMethod 'https://api.github.com/repos/manju-summoner/YukkuriMovieMaker4/releases/latest'
+          $release = gh api repos/manju-summoner/YukkuriMovieMaker4/releases/latest | ConvertFrom-Json
           $asset = $release.assets | Where-Object name -Like '*_Lite.zip' | Select-Object -First 1
           if (-not $asset) { throw 'YMM4 Lite archive was not found' }
           Invoke-WebRequest $asset.browser_download_url -OutFile ymm4.zip
