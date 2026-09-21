@@ -77,11 +77,20 @@ float4 gather(float2 p, float radius)
     }
     else
     {
+        // Match the original plugin's hybrid CUDA gather.  The quality
+        // setting is only used for genuinely large radii; small/medium
+        // radii use the same fixed 64/128-point tiers as the AE plugin.
         int count = (int)sampleCount;
+        if (radius <= 16) count = 64;
+        else if (radius <= 40) count = 128;
+        else if (count <= 128) count = 128;
+        else if (count <= 256) count = 256;
+        else count = 512;
         [loop] for (int i = 0; i < count; ++i)
         {
             float4 s = 0;
-            if (count <= 128) s = samples128[i];
+            if (count <= 64) s = samples64[i];
+            else if (count <= 128) s = samples128[i];
             else if (count <= 256) s = samples256[i];
             else s = samples512[i];
             float w = weight(s.z, s.w);
@@ -107,7 +116,7 @@ D2D_PS_ENTRY(main)
     { c0 = float3(1,0,0); c1 = float3(0,1,0); c2 = float3(0,0,1); }
     float3 denom = max(c0 + c1 + c2, 1e-8);
     float3 result;
-    if (abs(dispersion) < 1e-6) result = mid.rgb * (c0+c1+c2) / denom;
+    if (abs(dispersion) < 1e-4) result = mid.rgb * (c0+c1+c2) / denom;
     else
     {
         float3 inside = dot(c0,c0) > 0 ? gather(p, max(radius * (1 - dispersion), 0)).rgb : 0;
@@ -115,10 +124,11 @@ D2D_PS_ENTRY(main)
         result = (inside * c0 + mid.rgb * c1 + outside * c2) / denom;
     }
     if (gamma > 1.0001) result = pivot * pow(max(result / max(pivot, .05), 0), 1 / gamma);
-    float a = saturate(mid.a);
+    float a = mid.a;
     if (a <= 1e-6) return 0;
     if (linearLight > .5) result = encode3(result / a) * a;
-    // D2D requires premultiplied output. Spectral channels may otherwise exceed
-    // the mid-radius alpha at a transparent edge and brighten later composites.
-    return float4(clamp(result, 0, a), a);
+    // Keep the original plugin's premultiplied values.  Do not clamp RGB to
+    // alpha here: the AE GPU path writes the finite post-processed channels
+    // unchanged, and spectral taps may legitimately exceed the mid alpha.
+    return float4(result, a);
 }

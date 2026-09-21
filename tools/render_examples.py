@@ -1,6 +1,7 @@
 """Deterministic CPU rendering of the YMM shader math. No generated imagery.
 Requires Python/Pillow and g++ (OpenMP). Run with the original JPEG path.
-Opaque RGB input, clamped edges, linear light, 512 samples, threshold .8.
+Opaque RGB input, clamped edges, linear light, original hybrid Vogel tiers,
+threshold .8.
 """
 from pathlib import Path
 import hashlib, json, os, subprocess, sys, tempfile
@@ -31,7 +32,7 @@ def main():
  crop=im.crop(box);crop.save(OUT/'source_16x9.png')
  metadata={'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'crop_box':box,'size':[w,h],
  'renderer':'CPU transcription of YMM4 HLSL; not YMM4 application output; no AI imagery',
- 'fixed':{'samples':512,'linear_light':True,'edge_repeat':True,'threshold':.8},'presets':[]}
+ 'fixed':{'quality':512,'hybrid_samples':{'radius<=16':64,'radius<=40':128,'otherwise':512},'linear_light':True,'edge_repeat':True,'threshold':.8},'presets':[]}
  env=dict(os.environ,OMP_NUM_THREADS='4')
  with tempfile.TemporaryDirectory(prefix='coolblur-render-') as tmp:
   tmp=Path(tmp)

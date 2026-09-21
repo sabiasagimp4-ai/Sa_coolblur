@@ -24,7 +24,7 @@ float bilinear(float x,float y,int c){
  float a=prepared[y0*W+x0][c],b=prepared[y0*W+x1][c],d=prepared[y1*W+x0][c],e=prepared[y1*W+x1][c];
  return (a+(b-a)*tx)*(1-ty)+(d+(e-d)*tx)*ty;
 }
-float gather(int x,int y,float r,int c,const Params&p,const std::vector<float>&weights){
+float gather(int x,int y,float r,int c,const Params&p){
  if(r<.5f)return prepared[y*W+x][c];
  float aspect=std::sqrt(p.aspect),rx=std::max(r/aspect,.5f),ry=std::max(r*aspect,.5f);
  int ix=int(std::ceil(rx)),iy=int(std::ceil(ry));float sum=0,total=0;
@@ -35,7 +35,14 @@ float gather(int x,int y,float r,int c,const Params&p,const std::vector<float>&w
    sum+=bilinear(float(x+dx),float(y+dy),c)*w;total+=w;
   }
  }else{
-  for(int i=0;i<512;++i){auto s=samples512[i];float w=weights[i];sum+=bilinear(x+s.x*rx,y+s.y*ry,c)*w;total+=w;}
+  // Match the original AE GPU hybrid gather: 64 samples through radius 16,
+  // 128 through radius 40, then the selected quality tier for larger radii.
+  int count = 512; // the example renderer uses the High quality tier
+  if(r<=16) count=64; else if(r<=40) count=128;
+  for(int i=0;i<count;++i){
+   float4 s = count<=64 ? samples64[i] : (count<=128 ? samples128[i] : (count<=256 ? samples256[i] : samples512[i]));
+   float w=weight(p.edge,s.z,s.w);sum+=bilinear(x+s.x*rx,y+s.y*ry,c)*w;total+=w;
+  }
  }
  return total>0?sum/total:prepared[y*W+x][c];
 }
@@ -48,7 +55,6 @@ int main(int argc,char**argv){try{
  if(p.mode!=1&&p.mode!=2&&p.mode!=4)throw std::runtime_error("Examples support linear/radial/uniform only");
  original.resize(W*H);prepared.resize(W*H);float gamma=1+p.boost*.04f,pivot=.8f;
  for(int i=0;i<W*H;++i)for(int c=0;c<3;++c){float v=bytes[i*3+c]/255.f;original[i][c]=v;v=decode(v);prepared[i][c]=gamma>1.0001f?pivot*std::pow(v/pivot,gamma):v;}
- std::vector<float>weights(512);for(int i=0;i<512;++i)weights[i]=weight(p.edge,samples512[i].z,samples512[i].w);
  float colors[3][3]={{1,0,0},{0,1,0},{0,0,1}};
  if(p.color==1){float custom[3][3]={{0,1,1},{1,0,1},{1,1,0}};for(int k=0;k<3;++k)for(int c=0;c<3;++c)colors[k][c]=custom[k][c];}
  for(int c=0;c<3;++c){float total=colors[0][c]+colors[1][c]+colors[2][c];for(int k=0;k<3;++k)colors[k][c]/=total;}
@@ -60,7 +66,7 @@ int main(int argc,char**argv){try{
   if(p.invert)amount=1-amount;
   if(amount<=0||p.radius<.5f)continue;
   float r=amount*p.radius,radii[]={std::max(r*(1-p.disp),0.f),r,std::max(r*(1+p.disp),0.f)};
-  for(int c=0;c<3;++c){float value=0;for(int k=0;k<3;++k)if(colors[k][c]>0)value+=colors[k][c]*gather(x,y,radii[k],c,p,weights);
+  for(int c=0;c<3;++c){float value=0;for(int k=0;k<3;++k)if(colors[k][c]>0)value+=colors[k][c]*gather(x,y,radii[k],c,p);
    if(gamma>1.0001f)value=pivot*std::pow(std::max(value/pivot,0.f),1/gamma);
    bytes[(y*W+x)*3+c]=(unsigned char)std::lround(255*sat(encode(value)));
   }

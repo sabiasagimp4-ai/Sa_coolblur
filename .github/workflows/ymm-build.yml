@@ -66,3 +66,20 @@ jobs:
           path: SaCoolBlurYmm.zip
           if-no-files-found: error
 
+      - name: Publish release asset
+        if: github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'v0.1.0'
+          gh release view $tag --repo '${{ github.repository }}' *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release $tag already exists; keeping its asset."
+            exit 0
+          }
+          gh release create $tag SaCoolBlurYmm.zip `
+            --repo '${{ github.repository }}' `
+            --target '${{ github.sha }}' `
+            --title "Sa_coolblur $tag" `
+            --generate-notes

@@ -1,23 +1,27 @@
 # Sa_coolblur
 
-AEで使っていた自作プラグインを移植したものです。
 YMM4用の色分散レンズブラー。ぼかしの広がりを3つの色に分け、玉ボケや色のにじみを作ります。
 
 帯状・円形・深度マップ画像・全体の4モード。分散色、ボケの縁、ハイライト、縦横比、ピント位置を調整できます。
 
 ## インストール
 
-[Actions](https://github.com/sabiasagimp4-ai/Sa_coolblur/actions) の成功した実行から `SaCoolBlurYmm` をダウンロードし、展開したフォルダを YMM4 の `user/plugin` に置いて再起動してください。映像エフェクトの「ぼかし」→「Sa_coolblur」で追加できます。
+[最新版をダウンロード](https://github.com/sabiasagimp4-ai/Sa_coolblur/releases/latest/download/SaCoolBlurYmm.zip)して展開し、`SaCoolBlurYmm` フォルダを YMM4 の `user/plugin` に置いて再起動してください。映像エフェクトの「ぼかし」→「Sa_coolblur」で追加できます。
 
 ## パラメータ例
 
-添付画像をコードで中央クロップし、896×504（正確な16:9）にした入力を使っています。YMM4版のシェーダーと同じ式をCPU側へ転記し、同じVogelサンプル点・リニアライト変換・色分散・ボケ縁の重みでレンダリングしました。画像生成は使っていません。
+添付画像を中央クロップし、896×504の正確な16:9にした入力を使っています。比較画像はAI生成ではなく、元プラグインGPU版の計算順（前処理、ハイブリッドVogel点群、色分散、ボケ縁、線形ライト）をHLSLとCPU参照コードで再現したものです。
 
 ![コードでレンダリングしたSa_coolblurの16:9比較](assets/examples/comparison.jpg)
 
 左上は原画、右上は帯状フォーカス、左下は円形フォーカス＋色分散、右下はアナモルフィックぼかしです。各パネルに実際に使った半径（R）、分散量（D）、ボケの縁（Edge）、ハイライト（Hi）、縦横比（A）を表示しています。
 
 再生成用コードは [tools/render_examples.py](tools/render_examples.py) と [tools/render_reference.cpp](tools/render_reference.cpp)、全設定値は [parameters.json](assets/examples/parameters.json) にあります。
+
+## 元プラグインとの一致
+
+- YMM4版は元のAE GPU版の通常解像度パス（downsample=1）を基準にしています。小半径の整数ディスク、64/128/256/512点のVogel切替、色チャンネルの重み、リニアライト、ハイライト、アルファ処理を同じ順で計算します。
+- D3D11とCUDAでは浮動小数点とテクスチャ補間が異なるため、別GPU間で8bit画像が全ピクセル完全一致することまでは保証できません。式とパラメータの挙動は一致させています。
 
 ## 補足
 
