@@ -48,6 +48,10 @@ jobs:
           dotnet build ymm/SaCoolBlurYmm.csproj -c Release "-p:YMM4DirPath=$env:YMM4_DIR" "-p:FxcPath=$env:FXC_PATH" "-p:D2DIncludePath=$env:D2D_INCLUDE"
           if ($LASTEXITCODE -ne 0) { throw 'YMM4 build failed' }
 
+      - name: Test production shaders on WARP
+        shell: pwsh
+        run: ./tests/run-gpu-tests.ps1
+
       - name: Package
         shell: pwsh
         run: |

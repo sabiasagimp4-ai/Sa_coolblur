@@ -110,7 +110,7 @@ D2D_PS_ENTRY(main)
         float3 outside = dot(c2,c2) > 0 ? gather(p, max(radius * (1 + dispersion), 0)).rgb : 0;
         result = (inside * c0 + mid.rgb * c1 + outside * c2) / denom;
     }
-    if (gamma > 1.0001) result = pivot * pow(max(result, 0) / pivot, 1 / gamma);
+    if (gamma > 1.0001) result = pivot * pow(max(result / max(pivot, .05), 0), 1 / gamma);
     float a = saturate(mid.a);
     if (a <= 1e-6) return 0;
     if (linearLight > .5) result = encode3(result / a) * a;
