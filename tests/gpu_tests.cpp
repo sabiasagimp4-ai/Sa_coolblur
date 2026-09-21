@@ -92,8 +92,8 @@ std::array<float,44> defaults() {
             .5f,.1f,.2f,0, 128,0,0,0, 1,0,0,0, 0,1,0,0, 0,0,1,0,
             0,0,W,H, 0,0,W,H};
 }
-void near(float x,float y,float tol=3e-4f) {if(!std::isfinite(x)||std::abs(x-y)>tol) throw std::runtime_error("Mismatch: "+std::to_string(x)+" != "+std::to_string(y));}
-void imageNear(const std::vector<Pixel>& a,const std::vector<Pixel>& b,float tol=3e-4f) {for(size_t i=0;i<a.size();++i) for(int c=0;c<4;++c) near(a[i][c],b[i][c],tol);}
+void assertNear(float x,float y,float tol=3e-4f) {if(!std::isfinite(x)||std::abs(x-y)>tol) throw std::runtime_error("Mismatch: "+std::to_string(x)+" != "+std::to_string(y));}
+void imageNear(const std::vector<Pixel>& a,const std::vector<Pixel>& b,float tol=3e-4f) {for(size_t i=0;i<a.size();++i) for(int c=0;c<4;++c) assertNear(a[i][c],b[i][c],tol);}
 int main() {
  try {
     Gpu g;
@@ -111,13 +111,13 @@ int main() {
     c=defaults(); imageNear(g.render(transparent,c),transparent,1e-6f); ++tests;
     c[5]=3; imageNear(g.render(pattern,c),pattern,1e-6f); ++tests; // missing depth
     c=defaults(); c[6]=1; imageNear(g.render(pattern,c),pattern,1e-6f); ++tests;
-    c=defaults(); c[7]=1; auto map=g.render(field,c); for(auto px:map) for(int k=0;k<4;++k) near(px[k],.5f); ++tests;
+    c=defaults(); c[7]=1; auto map=g.render(field,c); for(auto px:map) for(int k=0;k<4;++k) assertNear(px[k],.5f); ++tests;
     c=defaults(); c[5]=3; c[19]=1; std::vector<Pixel> depth(W*H,Pixel{.5f,.5f,.5f,1});
     imageNear(g.render(pattern,c,&depth),pattern,1e-6f); ++tests;
     c=defaults(); c[15]=0; c[12]=1; auto fade=g.render(field,c);
     if(!(fade[0][3]<.5f&&fade[W*(H/2)+W/2][3]>.45f)) throw std::runtime_error("Transparent edge did not fade"); ++tests;
     c=defaults(); c[24]=c[29]=c[34]=0; imageNear(g.render(field,c),field); ++tests; // black-picker fallback
-    c=defaults(); c[24]=0; auto masked=g.render(field,c); for(auto px:masked) {near(px[0],0); near(px[1],.3f);near(px[2],.4f);} ++tests;
+    c=defaults(); c[24]=0; auto masked=g.render(field,c); for(auto px:masked) {assertNear(px[0],0); assertNear(px[1],.3f);assertNear(px[2],.4f);} ++tests;
     // Point source confirms actual blur and channel-radius ordering.
     std::vector<Pixel> impulse(W*H,Pixel{0,0,0,1}); impulse[W*(H/2)+W/2]={1,1,1,1};
     c=defaults(); c[8]=3; c[9]=.5f; c[12]=1; c[14]=0;
