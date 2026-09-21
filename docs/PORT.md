@@ -35,9 +35,9 @@ GitHub Actionsでも同じ構成でC#・HLSLをコンパイルし、配布ZIPを
 
 ## 検証
 
-2026-09-21: [Windows CI](https://github.com/sabiasagimp4-ai/Sa_coolblur/actions/runs/35551222414) 成功。
+2026-09-21: [Windows CI](https://github.com/sabiasagimp4-ai/Sa_coolblur/actions/runs/35584059978) 成功。
 
 - YMM4 Liteの実DLLを参照してC#とHLSLをビルド。警告・エラーなし。
-- 本番HLSLをD3D11 WARPで描画し38ケース成功。全画質・ボケの縁・正負の分散、半透明の一定色、半径0、ピント内、完全透明、深度未指定／焦点一致、端の透明化、色の正規化、点光源の分散を確認。Auto downsampleの2段グラフは、次回CIで追加コンパイルと統合確認を行う。
+- 本番HLSLをD3D11 WARPで描画し38ケース成功。全画質・ボケの縁・正負の分散、半透明の一定色、半径0、ピント内、完全透明、深度未指定／焦点一致、端の透明化、色の正規化、点光源の分散を確認。Auto downsampleの縮小・合成シェーダーも本番FXCでコンパイル済み。
 - WARPテストはDirect2Dの座標ヘルパーをテスト用アダプターで置換して実行する。YMM4のUI、Direct2Dグラフ全体、プロジェクト保存／再読込、実GPU性能までは確認していない。
 - YMM4実機でのプレビュー・書き出し確認は別途必要。

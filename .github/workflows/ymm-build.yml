@@ -78,7 +78,7 @@ jobs:
           $tag = 'v0.1.0'
           gh release view $tag --repo '${{ github.repository }}' *> $null
           if ($LASTEXITCODE -eq 0) {
-            gh release upload $tag SaCoolBlurYmm.ymme --repo '${{ github.repository }}' --clobber
+            gh release upload $tag SaCoolBlurYmm.ymme SaCoolBlurYmm.zip --repo '${{ github.repository }}' --clobber
             exit 0
           }
           gh release create $tag SaCoolBlurYmm.ymme SaCoolBlurYmm.zip `
