@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <title>Sa_coolblur Web Test</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">Sa_coolblur</p>
+      <h1>Web Test</h1>
+      <p class="lead">YMM4版と同じパラメータを、ブラウザ上で試せます。</p>
+    </div>
+    <a class="repo-link" href="https://github.com/sabiasagimp4-ai/Sa_coolblur">GitHub</a>
+  </header>
+
+  <main class="workspace">
+    <section class="preview-panel" aria-label="プレビュー">
+      <div class="canvas-wrap">
+        <canvas id="preview" width="896" height="504"></canvas>
+        <div id="loading" class="loading">読み込み中…</div>
+      </div>
+      <div class="preview-meta">
+        <span id="resolution">896 × 504</span>
+        <span id="factor">Auto: 1×</span>
+        <span id="timing">– ms</span>
+        <span id="precision">16-bit float</span>
+      </div>
+      <p id="message" class="message" role="status"></p>
+      <div class="actions">
+        <label class="button secondary file-button">
+          画像を変更
+          <input id="imageFile" type="file" accept="image/*">
+        </label>
+        <button id="saveImage" class="button secondary" type="button">PNG保存</button>
+        <button id="copyUrl" class="button secondary" type="button">設定URLをコピー</button>
+        <button id="resetAll" class="button" type="button">既定値に戻す</button>
+      </div>
+
+      <div class="preset-block">
+        <h2>プリセット</h2>
+        <div id="presets" class="preset-list"></div>
+      </div>
+    </section>
+
+    <aside class="controls" aria-label="パラメータ">
+      <section class="control-section">
+        <h2>表示</h2>
+        <label class="select-row">
+          <span>プレビュー解像度</span>
+          <select id="previewScale" data-param="previewScale">
+            <option value="0.25">25%（軽量）</option>
+            <option value="0.5" selected>50%</option>
+            <option value="1">100%（正確）</option>
+          </select>
+        </label>
+        <label class="select-row">
+          <span>画質</span>
+          <select id="quality" data-param="quality">
+            <option value="128">高速（128）</option>
+            <option value="256" selected>標準（256）</option>
+            <option value="512">高品質（512）</option>
+          </select>
+        </label>
+        <label class="select-row">
+          <span>ダウンサンプル</span>
+          <select id="downsample" data-param="downsample">
+            <option value="0" selected>自動</option>
+            <option value="1">なし（原寸）</option>
+            <option value="2">2倍</option>
+            <option value="3">3倍</option>
+            <option value="4">4倍</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="control-section">
+        <h2>ピント</h2>
+        <label class="select-row">
+          <span>ピントの形</span>
+          <select id="mode" data-param="mode">
+            <option value="1" selected>帯状</option>
+            <option value="2">円形</option>
+            <option value="4">全体</option>
+          </select>
+        </label>
+        <div id="focusControls"></div>
+        <div class="toggle-grid">
+          <label><input id="invert" data-param="invert" type="checkbox"> ピントを反転</label>
+          <label><input id="showMap" data-param="showMap" type="checkbox"> ピントマップ</label>
+        </div>
+      </section>
+
+      <section class="control-section">
+        <h2>ブラー</h2>
+        <div id="blurControls"></div>
+      </section>
+
+      <section class="control-section">
+        <h2>色分散</h2>
+        <div id="lensControls"></div>
+        <div class="color-grid">
+          <label><span>内側</span><input id="innerColor" data-param="innerColor" type="color" value="#ff0000"></label>
+          <label><span>中央</span><input id="middleColor" data-param="middleColor" type="color" value="#00ff00"></label>
+          <label><span>外側</span><input id="outerColor" data-param="outerColor" type="color" value="#0000ff"></label>
+        </div>
+      </section>
+
+      <section class="control-section">
+        <h2>処理</h2>
+        <div class="toggle-grid">
+          <label><input id="edgeRepeat" data-param="edgeRepeat" type="checkbox" checked> 端を引き延ばす</label>
+          <label><input id="linearLight" data-param="linearLight" type="checkbox" checked> リニアライト</label>
+        </div>
+      </section>
+
+      <details class="notes">
+        <summary>再現範囲</summary>
+        <p>元CUDA版のGPU経路をWebGL2へ移したテスト実装です。深度マップ、AEのCPU FFT経路、透明素材の完全一致は対象外です。50%・25%表示では半径も縮小するため近似になります。</p>
+      </details>
+    </aside>
+  </main>
+
+  <noscript>このページにはJavaScriptが必要です。</noscript>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
