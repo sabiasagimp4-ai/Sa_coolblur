@@ -4,6 +4,10 @@ YMM4用の色分散レンズブラー。ぼかしの広がりを3つの色に分
 
 帯状・円形・深度マップ画像・全体の4モード。分散色、ボケの縁、ハイライト、縦横比、ピント位置を調整できます。
 
+## Webで試す
+
+[Sa_coolblur Web Test](https://sabiasagimp4-ai.github.io/Sa_coolblur/) では、下の写真や手元の画像を使って各パラメータをブラウザ上で試せます。既定は軽い50%表示です。元のピクセル半径で確認するときは「プレビュー解像度」を100%にしてください。
+
 ## インストール
 
 [最新版の`.ymme`をダウンロード](https://github.com/sabiasagimp4-ai/Sa_coolblur/releases/latest/download/SaCoolBlurYmm.ymme)してダブルクリックし、YMM4のインストーラーから導入してください。手動で入れる場合は[ZIP版](https://github.com/sabiasagimp4-ai/Sa_coolblur/releases/latest/download/SaCoolBlurYmm.zip)を展開して`SaCoolBlurYmm`フォルダをYMM4の`user/plugin`に置き、再起動してください。映像エフェクトの「ぼかし」→「Sa_coolblur」で追加できます。
