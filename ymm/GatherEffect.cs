@@ -88,7 +88,7 @@ internal sealed class GatherEffect(IGraphicsDevicesAndContext devices)
         protected override void UpdateConstants()
         {
             drawInformation?.SetOutputBuffer(BufferPrecision.PerChannel32Float, ChannelDepth.Four);
-            drawInformation?.SetInputDescription(0, new InputDescription(Filter.MinMagMipLinear, 1));
+            drawInformation?.SetInputDescription(0, new InputDescription { Filter = Filter.MinMagMipLinear, LevelOfDetailCount = 1 });
             drawInformation?.SetPixelShaderConstantBuffer(_c);
         }
         public override void MapOutputRectToInputRects(RawRect outputRect, RawRect[] inputRects)

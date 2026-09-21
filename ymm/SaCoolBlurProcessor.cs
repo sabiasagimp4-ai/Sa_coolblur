@@ -116,7 +116,7 @@ internal sealed class SaCoolBlurProcessor : IVideoEffectProcessor
                 try
                 {
                     next = _devices.DeviceContext.CreateBitmap(new SizeI(bitmap.PixelWidth, bitmap.PixelHeight),
-                        handle.AddrOfPinnedObject(), (uint)stride,
+                        handle.AddrOfPinnedObject(), stride,
                         new BitmapProperties1(new Vortice.DCommon.PixelFormat(Format.B8G8R8A8_UNorm, Vortice.DCommon.AlphaMode.Premultiplied), 96, 96));
                 }
                 finally { handle.Free(); }
