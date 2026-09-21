@@ -59,11 +59,14 @@ jobs:
           Copy-Item ymm/bin/Release/net10.0-windows10.0.19041.0/SaCoolBlurYmm.dll artifact/SaCoolBlurYmm/
           Copy-Item README.md artifact/SaCoolBlurYmm/
           Compress-Archive artifact/SaCoolBlurYmm SaCoolBlurYmm.zip
+          Copy-Item SaCoolBlurYmm.zip SaCoolBlurYmm.ymme
 
       - uses: actions/upload-artifact@v7
         with:
           name: SaCoolBlurYmm
-          path: SaCoolBlurYmm.zip
+          path: |
+            SaCoolBlurYmm.zip
+            SaCoolBlurYmm.ymme
           if-no-files-found: error
 
       - name: Publish release asset
@@ -75,10 +78,10 @@ jobs:
           $tag = 'v0.1.0'
           gh release view $tag --repo '${{ github.repository }}' *> $null
           if ($LASTEXITCODE -eq 0) {
-            Write-Host "Release $tag already exists; keeping its asset."
+            gh release upload $tag SaCoolBlurYmm.ymme --repo '${{ github.repository }}' --clobber
             exit 0
           }
-          gh release create $tag SaCoolBlurYmm.zip `
+          gh release create $tag SaCoolBlurYmm.ymme SaCoolBlurYmm.zip `
             --repo '${{ github.repository }}' `
             --target '${{ github.sha }}' `
             --title "Sa_coolblur $tag" `

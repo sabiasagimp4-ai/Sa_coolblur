@@ -6,7 +6,7 @@ YMM4用の色分散レンズブラー。ぼかしの広がりを3つの色に分
 
 ## インストール
 
-[最新版をダウンロード](https://github.com/sabiasagimp4-ai/Sa_coolblur/releases/latest/download/SaCoolBlurYmm.zip)して展開し、`SaCoolBlurYmm` フォルダを YMM4 の `user/plugin` に置いて再起動してください。映像エフェクトの「ぼかし」→「Sa_coolblur」で追加できます。
+[最新版の`.ymme`をダウンロード](https://github.com/sabiasagimp4-ai/Sa_coolblur/releases/latest/download/SaCoolBlurYmm.ymme)してダブルクリックし、YMM4のインストーラーから導入してください。手動で入れる場合は[ZIP版](https://github.com/sabiasagimp4-ai/Sa_coolblur/releases/latest/download/SaCoolBlurYmm.zip)を展開して`SaCoolBlurYmm`フォルダをYMM4の`user/plugin`に置き、再起動してください。映像エフェクトの「ぼかし」→「Sa_coolblur」で追加できます。
 
 ## パラメータ例
 
