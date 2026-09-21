@@ -80,16 +80,18 @@ float4 gather(float2 p, float radius)
         // Match the original plugin's hybrid CUDA gather.  The quality
         // setting is only used for genuinely large radii; small/medium
         // radii use the same fixed 64/128-point tiers as the AE plugin.
+        // Keep the loop bound tied to the uniform quality setting.  FXC
+        // rejects a [loop] whose bound is first rewritten to a compile-time
+        // tier; the early break below preserves the same runtime tier choice
+        // without changing the shader's instruction shape.
         int count = (int)sampleCount;
-        if (radius <= 16) count = 64;
-        else if (radius <= 40) count = 128;
-        else if (count <= 128) count = 128;
-        else if (count <= 256) count = 256;
-        else count = 512;
         [loop] for (int i = 0; i < count; ++i)
         {
+            if (radius <= 16 && i >= 64) break;
+            if (radius > 16 && radius <= 40 && i >= 128) break;
             float4 s = 0;
-            if (count <= 64) s = samples64[i];
+            if (radius <= 16) s = samples64[i];
+            else if (radius <= 40) s = samples128[i];
             else if (count <= 128) s = samples128[i];
             else if (count <= 256) s = samples256[i];
             else s = samples512[i];
