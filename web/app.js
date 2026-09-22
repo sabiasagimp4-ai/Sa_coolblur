@@ -15,6 +15,7 @@ const DEFAULTS = Object.freeze({
   radius: 20,
   bokehEdge: 0,
   highlight: 30,
+  bokehStrength: 0,
   threshold: 0.8,
   dispersion: 25,
   anamorphic: 1,
@@ -37,6 +38,7 @@ const RANGE_GROUPS = {
     ["radius", "半径", 0, 100, 0.1, "px"],
     ["bokehEdge", "ボケの縁", -100, 100, 0.1, "%"],
     ["highlight", "ハイライト", 0, 100, 0.1, "%"],
+    ["bokehStrength", "玉ボケ強調", 0, 200, 0.1, "%"],
     ["threshold", "しきい値", 0.05, 1, 0.01, ""],
   ],
   lensControls: [
@@ -48,11 +50,12 @@ const RANGE_GROUPS = {
 const PRESETS = [
   ["既定値", {}],
   ["弱い全体", { mode: 4, radius: 8, dispersion: 25, width: 0, feather: 1 }],
+  ["全体ぼけ", { mode: 4, quality: 512, radius: 40, dispersion: 0, highlight: 90, bokehStrength: 100, width: 0, feather: 1 }],
   ["色分散", { mode: 4, radius: 20, dispersion: 250, width: 0, feather: 1 }],
   ["机にピント", { mode: 1, radius: 36, dispersion: 150, centerY: 76, width: 80, feather: 150 }],
   ["黒板にピント", { mode: 2, radius: 38, dispersion: 200, centerX: 61, centerY: 35, width: 100, feather: 170 }],
   ["横長ボケ", { mode: 4, radius: 24, dispersion: 200, bokehEdge: 70, highlight: 65, anamorphic: 0.5 }],
-  ["縁の強いボケ", { mode: 4, radius: 24, dispersion: 100, bokehEdge: 100, highlight: 50 }],
+  ["縁の強いボケ", { mode: 4, radius: 24, dispersion: 100, bokehEdge: 100, highlight: 50, bokehStrength: 100 }],
 ];
 
 const VERTEX_SHADER = `#version 300 es
@@ -131,6 +134,7 @@ uniform float uEdge;
 uniform float uAnamorphic;
 uniform float uGamma;
 uniform float uPivot;
+uniform float uBokehStrength;
 uniform bool uLinearLight;
 uniform bool uRepeatEdge;
 uniform int uQuality;
@@ -178,13 +182,31 @@ vec4 fetchPrepared(vec2 q) {
   return texture(uPrepared, toUv(q)) * coverage;
 }
 
-vec4 gatherColor(vec2 p, float radius) {
+vec3 isolateHighlight(vec4 c) {
+  if (c.a <= 1e-6) return vec3(0.0);
+  float luminance = dot(c.rgb / c.a, vec3(0.2126, 0.7152, 0.0722));
+  float start = max(uPivot, 0.05);
+  float mask = saturate1((luminance - start) / max(1.0 - start, 0.05));
+  mask = mask * mask * (3.0 - 2.0 * mask);
+  return c.rgb * mask;
+}
+
+struct GatherResult {
+  vec4 color;
+  vec3 highlight;
+};
+
+GatherResult gatherColor(vec2 p, float radius) {
+  GatherResult result;
   vec4 base = fetchPrepared(p);
-  if (radius < 0.5) return base;
+  result.color = base;
+  result.highlight = uBokehStrength > 1e-6 ? isolateHighlight(base) : vec3(0.0);
+  if (radius < 0.5) return result;
   float aspect = sqrt(clamp(uAnamorphic, 0.25, 4.0));
   vec2 axes = max(vec2(radius / aspect, radius * aspect), vec2(0.5));
   ivec2 ir = ivec2(ceil(axes));
   vec4 sum = vec4(0.0);
+  vec3 highlightSum = vec3(0.0);
   float total = 0.0;
   if ((2 * ir.x + 1) * (2 * ir.y + 1) <= 169) {
     for (int y = -12; y <= 12; ++y) {
@@ -196,15 +218,18 @@ vec4 gatherColor(vec2 p, float radius) {
         if (rn2 > 1.0) continue;
         float rn = sqrt(rn2);
         float w = kernelWeight(rn, rn2) * saturate1((1.0 - rn) * min(axes.x, axes.y));
-        sum += fetchPrepared(p + vec2(float(x), float(y))) * w;
+        vec4 tap = fetchPrepared(p + vec2(float(x), float(y)));
+        sum += tap * w;
+        if (uBokehStrength > 1e-6) highlightSum += isolateHighlight(tap) * w;
         total += w;
       }
     }
   } else {
     int count;
     int offset;
-    if (radius <= 16.0) { count = 64; offset = 0; }
-    else if (radius <= 40.0) { count = 128; offset = 64; }
+    bool enhanced = uBokehStrength > 1e-6;
+    if (!enhanced && radius <= 16.0) { count = 64; offset = 0; }
+    else if (!enhanced && radius <= 40.0) { count = 128; offset = 64; }
     else if (uQuality <= 128) { count = 128; offset = 64; }
     else if (uQuality <= 256) { count = 256; offset = 192; }
     else { count = 512; offset = 448; }
@@ -212,11 +237,17 @@ vec4 gatherColor(vec2 p, float radius) {
       if (i >= count) break;
       vec4 s = texelFetch(uSamples, ivec2(offset + i, 0), 0);
       float w = kernelWeight(s.z, s.w);
-      sum += fetchPrepared(p + s.xy * axes) * w;
+      vec4 tap = fetchPrepared(p + s.xy * axes);
+      sum += tap * w;
+      if (enhanced) highlightSum += isolateHighlight(tap) * w;
       total += w;
     }
   }
-  return total > 0.0 ? sum / total : base;
+  if (total > 0.0) {
+    result.color = sum / total;
+    if (uBokehStrength > 1e-6) result.highlight = highlightSum / total;
+  }
+  return result;
 }
 
 void main() {
@@ -229,7 +260,8 @@ void main() {
   }
   if (amount <= 0.0 || uRadius < 0.5) { outColor = original; return; }
   float radius = amount * uRadius;
-  vec4 mid = gatherColor(p, radius);
+  GatherResult midSample = gatherColor(p, radius);
+  vec4 mid = midSample.color;
   vec3 c0 = uInnerColor;
   vec3 c1 = uMiddleColor;
   vec3 c2 = uOuterColor;
@@ -243,13 +275,30 @@ void main() {
   if (abs(uDispersion) < 1e-4) {
     result = mid.rgb * (c0 + c1 + c2) / denom;
   } else {
-    vec3 inside = dot(c0, c0) > 0.0 ? gatherColor(p, max(radius * (1.0 - uDispersion), 0.0)).rgb : vec3(0.0);
-    vec3 outside = dot(c2, c2) > 0.0 ? gatherColor(p, max(radius * (1.0 + uDispersion), 0.0)).rgb : vec3(0.0);
+    vec3 inside = vec3(0.0);
+    vec3 outside = vec3(0.0);
+    if (dot(c0, c0) > 0.0) {
+      GatherResult insideSample = gatherColor(p, max(radius * (1.0 - uDispersion), 0.0));
+      inside = insideSample.color.rgb;
+    }
+    if (dot(c2, c2) > 0.0) {
+      GatherResult outsideSample = gatherColor(p, max(radius * (1.0 + uDispersion), 0.0));
+      outside = outsideSample.color.rgb;
+    }
     result = (inside * c0 + mid.rgb * c1 + outside * c2) / denom;
   }
-  if (uGamma > 1.0001) result = uPivot * pow(max(result / max(uPivot, 0.05), vec3(0.0)), vec3(1.0 / uGamma));
+  vec3 bokeh = midSample.highlight;
+  if (uGamma > 1.0001) {
+    result = uPivot * pow(max(result / max(uPivot, 0.05), vec3(0.0)), vec3(1.0 / uGamma));
+    if (uBokehStrength > 1e-6) bokeh = uPivot * pow(max(bokeh / max(uPivot, 0.05), vec3(0.0)), vec3(1.0 / uGamma));
+  }
   float a = mid.a;
   if (a <= 1e-6) { outColor = vec4(0.0); return; }
+  if (uBokehStrength > 1e-6) {
+    vec3 baseStraight = result / a;
+    vec3 bokehStraight = clamp(bokeh * uBokehStrength / a, 0.0, 1.0);
+    result = (vec3(1.0) - (vec3(1.0) - baseStraight) * (vec3(1.0) - bokehStraight)) * a;
+  }
   if (uLinearLight) result = encode3(result / a) * a;
   outColor = vec4(result, a);
 }`;
@@ -529,6 +578,7 @@ class CoolBlurRenderer {
     this.setUniform(program, "uAnamorphic", params.anamorphic);
     this.setUniform(program, "uGamma", gamma);
     this.setUniform(program, "uPivot", params.threshold);
+    this.setUniform(program, "uBokehStrength", params.bokehStrength * 0.01);
     this.setUniform(program, "uLinearLight", params.linearLight);
     this.setUniform(program, "uRepeatEdge", params.edgeRepeat);
     this.setUniform(program, "uQuality", Number(params.quality));

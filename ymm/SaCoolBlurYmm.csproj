@@ -8,7 +8,7 @@
     <AssemblyName>SaCoolBlurYmm</AssemblyName>
     <RootNamespace>SaCoolBlurYmm</RootNamespace>
     <Deterministic>true</Deterministic>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <PathMap>$(MSBuildProjectDirectory)=/_/</PathMap>
     <FxcPath Condition="'$(FxcPath)' == ''">$(WindowsSdkBinPath)x64\fxc.exe</FxcPath>
     <D2DIncludePath Condition="'$(D2DIncludePath)' == ''">$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um</D2DIncludePath>
