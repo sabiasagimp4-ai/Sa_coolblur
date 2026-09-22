@@ -1,0 +1,47 @@
+{
+  "source": "NO_FUSION_0914_003(2).jpeg",
+  "source_sha256": "0c8752180efbc301ef611dc33ac55a54d0ef75233c760369cb683b482cd76c7c",
+  "crop_box": [
+    192,
+    3,
+    1344,
+    651
+  ],
+  "size": [
+    1152,
+    648
+  ],
+  "renderer": "tools/render_reference.cpp using ymm/Shaders/Samples.hlsli; deterministic CPU reference, no generated imagery",
+  "quality": 512,
+  "variants": {
+    "band": {
+      "mode": 1,
+      "radius": 40,
+      "dispersion": 0,
+      "highlight": 30,
+      "center_y": 52,
+      "width": 160,
+      "feather": 120,
+      "bokeh_strength": 0
+    },
+    "radial": {
+      "mode": 2,
+      "radius": 40,
+      "dispersion": 0,
+      "highlight": 30,
+      "center_x": 50,
+      "center_y": 50,
+      "width": 180,
+      "feather": 120,
+      "bokeh_strength": 0
+    },
+    "uniform": {
+      "mode": 4,
+      "radius": 40,
+      "dispersion": 0,
+      "highlight": 90,
+      "bokeh_strength": 100,
+      "anamorphic": 1
+    }
+  }
+}
