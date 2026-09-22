@@ -8,7 +8,7 @@ float angle, mode, invertFocus, showMap;
 float maxRadius, dispersion, edge, anamorphic;
 float gamma, pivot, linearLight, repeatEdge;
 float focusDistance, focusRange, depthFeather, hasDepth;
-float sampleCount, downsampleScale, reserved1, reserved2;
+float sampleCount, downsampleScale, bokehStrength, reserved2;
 float4 innerColor, middleColor, outerColor;
 float4 bounds, depthBounds;
 float4 focusBounds;
@@ -63,15 +63,35 @@ float4 fetch(float2 p, float2 offset)
     float4 uv = D2DGetInputCoordinate(0);
     return InputTexture0.SampleLevel(InputSampler0, uv.xy + uv.zw * (q - p), 0) * coverage;
 }
-float4 gather(float2 p, float radius)
+
+float3 isolateHighlight(float4 c)
 {
-    float4 result = fetch(p, 0);
+    if (c.a <= 1e-6) return 0;
+    float luminance = dot(c.rgb / c.a, float3(.2126, .7152, .0722));
+    float start = max(pivot, .05);
+    float mask = saturate((luminance - start) / max(1 - start, .05));
+    mask = mask * mask * (3 - 2 * mask);
+    return c.rgb * mask;
+}
+
+struct GatherResult
+{
+    float4 color;
+    float3 highlight;
+};
+
+GatherResult gather(float2 p, float radius)
+{
+    GatherResult result;
+    result.color = fetch(p, 0);
+    result.highlight = bokehStrength > 1e-6 ? isolateHighlight(result.color) : 0;
     if (radius >= .5)
     {
     float aspect = sqrt(clamp(anamorphic, .25, 4));
     float2 axes = max(float2(radius / aspect, radius * aspect), .5);
     int2 ir = (int2)ceil(axes);
     float4 sum = 0;
+    float3 highlightSum = 0;
     float total = 0;
     if ((2 * ir.x + 1) * (2 * ir.y + 1) <= 169)
     {
@@ -83,7 +103,9 @@ float4 gather(float2 p, float radius)
             if (rn2 > 1) continue;
             float rn = sqrt(rn2);
             float w = weight(rn, rn2) * saturate((1 - rn) * min(axes.x, axes.y));
-            sum += fetch(p, float2(x, y)) * w;
+            float4 tap = fetch(p, float2(x, y));
+            sum += tap * w;
+            if (bokehStrength > 1e-6) highlightSum += isolateHighlight(tap) * w;
             total += w;
         }
     }
@@ -97,22 +119,29 @@ float4 gather(float2 p, float radius)
         // tier; the early break below preserves the same runtime tier choice
         // without changing the shader's instruction shape.
         int count = (int)sampleCount;
+        bool enhanced = bokehStrength > 1e-6;
         [loop] for (int i = 0; i < count; ++i)
         {
-            if (radius <= 16 && i >= 64) break;
-            if (radius > 16 && radius <= 40 && i >= 128) break;
+            if (!enhanced && radius <= 16 && i >= 64) break;
+            if (!enhanced && radius > 16 && radius <= 40 && i >= 128) break;
             float4 s = 0;
-            if (radius <= 16) s = samples64[i];
-            else if (radius <= 40) s = samples128[i];
+            if (!enhanced && radius <= 16) s = samples64[i];
+            else if (!enhanced && radius <= 40) s = samples128[i];
             else if (count <= 128) s = samples128[i];
             else if (count <= 256) s = samples256[i];
             else s = samples512[i];
             float w = weight(s.z, s.w);
-            sum += fetch(p, s.xy * axes) * w;
+            float4 tap = fetch(p, s.xy * axes);
+            sum += tap * w;
+            if (enhanced) highlightSum += isolateHighlight(tap) * w;
             total += w;
         }
     }
-    if (total > 0) result = sum / total;
+    if (total > 0)
+    {
+        result.color = sum / total;
+        if (bokehStrength > 1e-6) result.highlight = highlightSum / total;
+    }
     }
     return result;
 }
@@ -126,7 +155,8 @@ D2D_PS_ENTRY(main)
     if (showMap > .5) return float4(amount.xxx, original.a);
     if (amount <= 0 || maxRadius < .5) return original;
     float radius = amount * maxRadius;
-    float4 mid = gather(p, radius);
+    GatherResult midSample = gather(p, radius);
+    float4 mid = midSample.color;
     float3 c0 = innerColor.rgb, c1 = middleColor.rgb, c2 = outerColor.rgb;
     if (dot(c0 + c1 + c2, float3(1,1,1)) < 1e-8)
     { c0 = float3(1,0,0); c1 = float3(0,1,0); c2 = float3(0,0,1); }
@@ -135,13 +165,34 @@ D2D_PS_ENTRY(main)
     if (abs(dispersion) < 1e-4) result = mid.rgb * (c0+c1+c2) / denom;
     else
     {
-        float3 inside = dot(c0,c0) > 0 ? gather(p, max(radius * (1 - dispersion), 0)).rgb : 0;
-        float3 outside = dot(c2,c2) > 0 ? gather(p, max(radius * (1 + dispersion), 0)).rgb : 0;
+        float3 inside = 0, outside = 0;
+        if (dot(c0,c0) > 0)
+        {
+            GatherResult insideSample = gather(p, max(radius * (1 - dispersion), 0));
+            inside = insideSample.color.rgb;
+        }
+        if (dot(c2,c2) > 0)
+        {
+            GatherResult outsideSample = gather(p, max(radius * (1 + dispersion), 0));
+            outside = outsideSample.color.rgb;
+        }
         result = (inside * c0 + mid.rgb * c1 + outside * c2) / denom;
     }
-    if (gamma > 1.0001) result = pivot * pow(max(result / max(pivot, .05), 0), 1 / gamma);
+    float3 bokeh = midSample.highlight;
+    if (gamma > 1.0001)
+    {
+        result = pivot * pow(max(result / max(pivot, .05), 0), 1 / gamma);
+        if (bokehStrength > 1e-6)
+            bokeh = pivot * pow(max(bokeh / max(pivot, .05), 0), 1 / gamma);
+    }
     float a = mid.a;
     if (a <= 1e-6) return 0;
+    if (bokehStrength > 1e-6)
+    {
+        float3 baseStraight = result / a;
+        float3 bokehStraight = saturate(bokeh * bokehStrength / a);
+        result = (1 - (1 - baseStraight) * (1 - bokehStraight)) * a;
+    }
     if (linearLight > .5) result = encode3(result / a) * a;
     // Keep the original plugin's premultiplied values.  Do not clamp RGB to
     // alpha here: the AE GPU path writes the finite post-processed channels

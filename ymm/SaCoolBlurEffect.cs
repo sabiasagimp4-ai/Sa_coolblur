@@ -28,43 +28,47 @@ public sealed class SaCoolBlurEffect : VideoEffectBase
     [AnimationSlider("F2", "%", 0, 100)]
     public Animation Highlight { get; } = new(30, 0, 100);
 
-    [Display(Name = "しきい値", Order = 5)]
+    [Display(Name = "玉ボケ強調", Order = 5)]
+    [AnimationSlider("F2", "%", 0, 200)]
+    public Animation BokehStrength { get; } = new(0, 0, 200);
+
+    [Display(Name = "しきい値", Order = 6)]
     [AnimationSlider("F2", "", 0.05, 1)]
     public Animation Threshold { get; } = new(0.8, 0.05, 1);
 
-    [Display(Name = "縦横比", Order = 6)]
+    [Display(Name = "縦横比", Order = 7)]
     [AnimationSlider("F2", "", 0.5, 2)]
     public Animation Anamorphic { get; } = new(1, 0.5, 2);
 
-    [Display(Name = "中心X", Order = 7)]
+    [Display(Name = "中心X", Order = 8)]
     [AnimationSlider("F2", "%", -200, 300)]
     public Animation CenterX { get; } = new(50, -200, 300);
 
-    [Display(Name = "中心Y", Order = 8)]
+    [Display(Name = "中心Y", Order = 9)]
     [AnimationSlider("F2", "%", -200, 300)]
     public Animation CenterY { get; } = new(50, -200, 300);
 
-    [Display(Name = "ピント幅", Order = 9)]
+    [Display(Name = "ピント幅", Order = 10)]
     [AnimationSlider("F2", "px", 0, 4000)]
     public Animation Width { get; } = new(200, 0, 4000);
 
-    [Display(Name = "ピントの境界ぼかし", Order = 10)]
+    [Display(Name = "ピントの境界ぼかし", Order = 11)]
     [AnimationSlider("F2", "px", 0, 2000)]
     public Animation Feather { get; } = new(300, 0, 2000);
 
-    [Display(Name = "角度", Order = 11)]
+    [Display(Name = "角度", Order = 12)]
     [AnimationSlider("F2", "°", -360, 360)]
     public Animation Angle { get; } = new(0, -360, 360);
 
-    [Display(Name = "焦点距離", Order = 12)]
+    [Display(Name = "焦点距離", Order = 13)]
     [AnimationSlider("F2", "", 0, 1)]
     public Animation FocusDistance { get; } = new(0.5, 0, 1);
 
-    [Display(Name = "深度のピント幅", Order = 13)]
+    [Display(Name = "深度のピント幅", Order = 14)]
     [AnimationSlider("F2", "", 0, 1)]
     public Animation FocusRange { get; } = new(0.1, 0, 1);
 
-    [Display(Name = "深度の境界ぼかし", Order = 14)]
+    [Display(Name = "深度の境界ぼかし", Order = 15)]
     [AnimationSlider("F2", "", 0, 1)]
     public Animation DepthFeather { get; } = new(0.2, 0, 1);
 
@@ -126,7 +130,7 @@ public sealed class SaCoolBlurEffect : VideoEffectBase
 
     public override IEnumerable<string> CreateExoVideoFilters(int keyFrameIndex, ExoOutputDescription exoOutputDescription) => [];
     public override IVideoEffectProcessor CreateVideoEffect(IGraphicsDevicesAndContext devices) => new SaCoolBlurProcessor(devices, this);
-    protected override IEnumerable<IAnimatable> GetAnimatables() => [Radius, Dispersion, BokehEdge, Highlight, Threshold, Anamorphic, CenterX, CenterY, Width, Feather, Angle, FocusDistance, FocusRange, DepthFeather];
+    protected override IEnumerable<IAnimatable> GetAnimatables() => [Radius, Dispersion, BokehEdge, Highlight, BokehStrength, Threshold, Anamorphic, CenterX, CenterY, Width, Feather, Angle, FocusDistance, FocusRange, DepthFeather];
 }
 public enum FocusMode
 {

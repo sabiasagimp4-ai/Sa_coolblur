@@ -33,7 +33,7 @@ internal sealed class GatherEffect(IGraphicsDevicesAndContext devices)
     // coordinates expressed in the full-resolution content rectangle.
     // Keep that rectangle as input 3 and use this scale only for that path.
     public float DownsampleScale { set => SetValue(21, value); }
-    public float Reserved1 { set => SetValue(22, value); }
+    public float BokehStrength { set => SetValue(22, value); }
     public float Reserved2 { set => SetValue(23, value); }
     public float InnerR { set => SetValue(24, value); }
     public float InnerG { set => SetValue(25, value); }
@@ -74,7 +74,7 @@ internal sealed class GatherEffect(IGraphicsDevicesAndContext devices)
         [CustomEffectProperty(PropertyType.Float, 19)] public float HasDepth { get => _c.HasDepth; set { _c.HasDepth = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 20)] public float Samples { get => _c.Samples; set { _c.Samples = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 21)] public float DownsampleScale { get => _c.DownsampleScale; set { _c.DownsampleScale = value; UpdateConstants(); } }
-        [CustomEffectProperty(PropertyType.Float, 22)] public float Reserved1 { get => _c.Reserved1; set { _c.Reserved1 = value; UpdateConstants(); } }
+        [CustomEffectProperty(PropertyType.Float, 22)] public float BokehStrength { get => _c.BokehStrength; set { _c.BokehStrength = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 23)] public float Reserved2 { get => _c.Reserved2; set { _c.Reserved2 = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 24)] public float InnerR { get => _c.InnerR; set { _c.InnerR = value; UpdateConstants(); } }
         [CustomEffectProperty(PropertyType.Float, 25)] public float InnerG { get => _c.InnerG; set { _c.InnerG = value; UpdateConstants(); } }
@@ -129,7 +129,7 @@ internal sealed class GatherEffect(IGraphicsDevicesAndContext devices)
         [StructLayout(LayoutKind.Sequential)]
         private struct Constants
         {
-            public float CenterX, CenterY, Zone, Feather, Angle, Mode, Invert, ShowMap, Radius, Dispersion, Edge, Anamorphic, Gamma, Pivot, Linear, Repeat, Distance, Range, DepthFeather, HasDepth, Samples, DownsampleScale, Reserved1, Reserved2, InnerR, InnerG, InnerB, Reserved3, MiddleR, MiddleG, MiddleB, Reserved4, OuterR, OuterG, OuterB, Reserved5;
+            public float CenterX, CenterY, Zone, Feather, Angle, Mode, Invert, ShowMap, Radius, Dispersion, Edge, Anamorphic, Gamma, Pivot, Linear, Repeat, Distance, Range, DepthFeather, HasDepth, Samples, DownsampleScale, BokehStrength, Reserved2, InnerR, InnerG, InnerB, Reserved3, MiddleR, MiddleG, MiddleB, Reserved4, OuterR, OuterG, OuterB, Reserved5;
             public float Left, Top, Right, Bottom, DepthLeft, DepthTop, DepthRight, DepthBottom, FocusLeft, FocusTop, FocusRight, FocusBottom;
         }
     }

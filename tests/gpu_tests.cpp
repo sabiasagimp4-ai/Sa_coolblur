@@ -156,6 +156,17 @@ int main() {
     c=defaults(); c[8]=3; c[9]=.5f; c[12]=1; c[14]=0;
     auto blurred=g.render(impulse,c); auto center=blurred[W*(H/2)+W/2];
     if(!(center[0]>center[1]&&center[1]>center[2]&&center[0]<1)) throw std::runtime_error("Spectral radius ordering failed"); ++tests;
+    // The optional bokeh layer must brighten isolated highlights while slot 22
+    // at its default zero keeps every legacy test on the original path.
+    c=defaults(); c[8]=3; c[9]=0; c[12]=1; c[14]=0;
+    auto normalBokeh=g.render(impulse,c); c[22]=1;
+    auto enhancedBokeh=g.render(impulse,c);
+    bool lifted=false;
+    for(size_t i=0;i<enhancedBokeh.size();++i) for(int k=0;k<3;++k) {
+        if(enhancedBokeh[i][k]+1e-6f<normalBokeh[i][k]) throw std::runtime_error("Bokeh enhancement darkened a highlight");
+        if(enhancedBokeh[i][k]>normalBokeh[i][k]+1e-4f) lifted=true;
+    }
+    if(!lifted) throw std::runtime_error("Bokeh enhancement had no effect"); ++tests;
     // Execute the production downsample shader, including a partial block on
     // odd dimensions, and compare every output texel to exact box averages.
     const int dw=5,dh=3,df=2,dlw=3,dlh=2;

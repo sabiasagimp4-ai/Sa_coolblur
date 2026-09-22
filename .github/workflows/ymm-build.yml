@@ -81,7 +81,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = 'v0.1.0'
+          $tag = 'v0.2.0'
           gh release view $tag --repo '${{ github.repository }}' *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $tag SaCoolBlurYmm.ymme SaCoolBlurYmm.zip --repo '${{ github.repository }}' --clobber

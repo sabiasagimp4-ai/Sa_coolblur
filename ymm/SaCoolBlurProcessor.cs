@@ -103,14 +103,15 @@ internal sealed class SaCoolBlurProcessor : IVideoEffectProcessor
             : GetDownsampleFactor((FocusMode)(int)mode, radius, Enum.IsDefined(_item.Downsample) ? _item.Downsample : DownsampleMode.Auto);
         float dispersion = Value(_item.Dispersion, -1000, 1000, 25) * .003f;
         float edge = Value(_item.BokehEdge, -100, 100, 0) * .01f;
+        float bokehStrength = Value(_item.BokehStrength, 0, 200, 0) * .01f;
         float anamorphic = Value(_item.Anamorphic, .5f, 2, 1);
         float distance = Value(_item.FocusDistance, 0, 1, .5f);
         float range = Value(_item.FocusRange, 0, 1, .1f);
         float depthFeather = Value(_item.DepthFeather, 0, 1, .2f);
         float samples = Enum.IsDefined(_item.Quality) ? (int)_item.Quality : 256;
         _prepare.Gamma = gamma; _prepare.Pivot = pivot; _prepare.Linear = linear;
-        ConfigureGather(_gather, 1, gamma, pivot, linear, centerX, centerY, zone, feather, angle, mode, radius, dispersion, edge, anamorphic, distance, range, depthFeather, samples, _item.ShowMap ? 1 : 0, _depth is null ? 0 : 1);
-        ConfigureGather(_lowGather, downsample, gamma, pivot, linear, centerX, centerY, zone, feather, angle, mode, radius, dispersion, edge, anamorphic, distance, range, depthFeather, samples, 0, 0);
+        ConfigureGather(_gather, 1, gamma, pivot, linear, centerX, centerY, zone, feather, angle, mode, radius, dispersion, edge, anamorphic, distance, range, depthFeather, samples, bokehStrength, _item.ShowMap ? 1 : 0, _depth is null ? 0 : 1);
+        ConfigureGather(_lowGather, downsample, gamma, pivot, linear, centerX, centerY, zone, feather, angle, mode, radius, dispersion, edge, anamorphic, distance, range, depthFeather, samples, bokehStrength, 0, 0);
         _downsample.Factor = downsample;
         _composite.CenterX = centerX; _composite.CenterY = centerY;
         _composite.Zone = zone; _composite.Feather = feather; _composite.Angle = angle;
@@ -126,7 +127,7 @@ internal sealed class SaCoolBlurProcessor : IVideoEffectProcessor
     private void ConfigureGather(GatherEffect target, int scale, float gamma, float pivot, float linear,
         float centerX, float centerY, float zone, float feather, float angle, float mode, float radius,
         float dispersion, float edge, float anamorphic, float distance, float range, float depthFeather,
-        float samples, float showMap, float hasDepth)
+        float samples, float bokehStrength, float showMap, float hasDepth)
     {
         float inverse = 1f / Math.Max(scale, 1);
         target.Gamma = gamma; target.Pivot = pivot; target.Linear = linear;
@@ -137,7 +138,7 @@ internal sealed class SaCoolBlurProcessor : IVideoEffectProcessor
         target.Dispersion = dispersion; target.Edge = edge; target.Anamorphic = anamorphic;
         target.Repeat = _item.EdgeRepeat ? 1 : 0;
         target.Distance = distance; target.Range = range; target.DepthFeather = depthFeather;
-        target.HasDepth = hasDepth; target.Samples = samples; target.DownsampleScale = scale;
+        target.HasDepth = hasDepth; target.Samples = samples; target.DownsampleScale = scale; target.BokehStrength = bokehStrength;
         target.InnerR = _item.InnerColor.R / 255f; target.InnerG = _item.InnerColor.G / 255f; target.InnerB = _item.InnerColor.B / 255f;
         target.MiddleR = _item.MiddleColor.R / 255f; target.MiddleG = _item.MiddleColor.G / 255f; target.MiddleB = _item.MiddleColor.B / 255f;
         target.OuterR = _item.OuterColor.R / 255f; target.OuterG = _item.OuterColor.G / 255f; target.OuterB = _item.OuterColor.B / 255f;

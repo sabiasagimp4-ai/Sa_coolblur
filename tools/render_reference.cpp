@@ -28,6 +28,7 @@ struct Params
     float radius, disp, edge, boost, aspect, cx, cy, width, feather, angle;
     bool invert;
     int color, quality;
+    float bokeh;
 };
 
 int W, H;
@@ -49,9 +50,25 @@ float bilinearPrepared(float x, float y, int c)
     return (a + (b - a) * tx) * (1 - ty) + (d + (e - d) * tx) * ty;
 }
 
-float gather(int x, int y, float radius, int c, const Params& p)
+float highlightMask(float x, float y)
 {
-    if (radius < .5f) return prepared[y * W + x][c];
+    float r = bilinearPrepared(x, y, 0);
+    float g = bilinearPrepared(x, y, 1);
+    float b = bilinearPrepared(x, y, 2);
+    float luminance = .2126f * r + .7152f * g + .0722f * b;
+    constexpr float pivot = .8f;
+    float start = std::max(pivot, .05f);
+    float mask = sat((luminance - start) / std::max(1 - start, .05f));
+    return mask * mask * (3 - 2 * mask);
+}
+
+float gather(int x, int y, float radius, int c, const Params& p, bool highlights = false)
+{
+    if (radius < .5f)
+    {
+        float value = prepared[y * W + x][c];
+        return highlights ? value * highlightMask(float(x), float(y)) : value;
+    }
     float aspect = std::sqrt(p.aspect);
     float rx = std::max(radius / aspect, .5f), ry = std::max(radius * aspect, .5f);
     int ix = int(std::ceil(rx)), iy = int(std::ceil(ry));
@@ -63,22 +80,28 @@ float gather(int x, int y, float radius, int c, const Params& p)
             float nx = dx / rx, ny = dy / ry, r2 = nx * nx + ny * ny;
             if (r2 > 1) continue;
             float rn = std::sqrt(r2), w = weight(p.edge, rn, r2) * sat((1 - rn) * std::min(rx, ry));
-            sum += bilinearPrepared(float(x + dx), float(y + dy), c) * w;
+            float sx = float(x + dx), sy = float(y + dy);
+            float value = bilinearPrepared(sx, sy, c);
+            sum += value * (highlights ? highlightMask(sx, sy) : 1) * w;
             total += w;
         }
     }
     else
     {
-        int count = radius <= 16 ? 64 : radius <= 40 ? 128 : p.quality;
+        int count = p.bokeh > 0 ? p.quality : radius <= 16 ? 64 : radius <= 40 ? 128 : p.quality;
         for (int i = 0; i < count; ++i)
         {
             float4 s = count <= 64 ? samples64[i] : count <= 128 ? samples128[i] : count <= 256 ? samples256[i] : samples512[i];
             float w = weight(p.edge, s.z, s.w);
-            sum += bilinearPrepared(x + s.x * rx, y + s.y * ry, c) * w;
+            float sx = x + s.x * rx, sy = y + s.y * ry;
+            float value = bilinearPrepared(sx, sy, c);
+            sum += value * (highlights ? highlightMask(sx, sy) : 1) * w;
             total += w;
         }
     }
-    return total > 0 ? sum / total : prepared[y * W + x][c];
+    if (total > 0) return sum / total;
+    float value = prepared[y * W + x][c];
+    return highlights ? value * highlightMask(float(x), float(y)) : value;
 }
 
 float focusAmount(float px, float py, float centerX, float centerY, float width, float feather, const Params& p)
@@ -124,6 +147,12 @@ RGB blurPixel(int x, int y, float amount, const Params& p, const Weights& weight
         for (int k = 0; k < 3; ++k)
             if (weights[k][c] > 0) value += weights[k][c] * gather(x, y, radii[k], c, p);
         if (gamma > 1.0001f) value = .8f * std::pow(std::max(value / .8f, 0.f), 1 / gamma);
+        if (p.bokeh > 0)
+        {
+            float bright = gather(x, y, radius, c, p, true);
+            if (gamma > 1.0001f) bright = .8f * std::pow(std::max(bright / .8f, 0.f), 1 / gamma);
+            value = 1 - (1 - value) * (1 - sat(bright * p.bokeh));
+        }
         out[c] = encode(value);
     }
     return out;
@@ -220,7 +249,7 @@ int main(int argc, char** argv)
 {
     try
     {
-        if (argc != 16 && argc != 17) throw std::runtime_error("input.ppm output.ppm mode radius dispersion edge boost aspect cx cy width feather angle invert color [quality]");
+        if (argc < 16 || argc > 18) throw std::runtime_error("input.ppm output.ppm mode radius dispersion edge boost aspect cx cy width feather angle invert color [quality] [bokeh]");
         std::ifstream f(argv[1], std::ios::binary);
         std::string magic;
         int maxval;
@@ -231,11 +260,13 @@ int main(int argc, char** argv)
         f.read((char*)bytes.data(), bytes.size());
         if (!f) throw std::runtime_error("Short input");
         int quality = argc == 17 ? std::stoi(argv[16]) : 256;
+        if (argc == 18) quality = std::stoi(argv[16]);
         quality = quality <= 128 ? 128 : quality <= 256 ? 256 : 512;
+        float bokeh = argc == 18 ? std::stof(argv[17]) * .01f : 0;
         Params p{std::stoi(argv[3]), std::stof(argv[4]), std::stof(argv[5]) * .003f, std::stof(argv[6]) * .01f,
                  std::stof(argv[7]), std::stof(argv[8]), std::stof(argv[9]), std::stof(argv[10]), std::stof(argv[11]),
                  std::stof(argv[12]), std::stof(argv[13]) * 3.14159265358979323846f / 180, std::stoi(argv[14]) != 0,
-                 std::stoi(argv[15]), quality};
+                 std::stoi(argv[15]), quality, bokeh};
         if (p.mode != 1 && p.mode != 2 && p.mode != 4) throw std::runtime_error("Examples support linear/radial/uniform only");
         original.resize(W * H);
         prepared.resize(W * H);
