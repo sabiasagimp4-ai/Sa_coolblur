@@ -26,6 +26,20 @@ YMM4用の色分散レンズブラー。ぼかしの広がりを3つの色に分
 
 再生成用コードは [tools/render_examples.py](tools/render_examples.py) と [tools/render_reference.cpp](tools/render_reference.cpp)、全設定値は [parameters.json](assets/examples/parameters.json) にあります。
 
+### 帯ぼけ・円ぼけ・全体ぼけ
+
+別の夜景入力でも3つのピント形状を確認できます。元画像を16:9（1152×648）に中央クロップし、同じCPU参照レンダラーで出力しています。画像生成は使用していません。
+
+![帯ぼけ・円ぼけ・全体ぼけの比較](assets/examples/no_fusion_0914_003_comparison.jpg)
+
+| 出力 | 設定 |
+| --- | --- |
+| [帯ぼけ](assets/examples/no_fusion_0914_003_band.jpg) | 帯状 / 半径40px / ピント幅160px / 境界ぼかし120px |
+| [円ぼけ](assets/examples/no_fusion_0914_003_radial.jpg) | 円形 / 半径40px / ピント幅180px / 境界ぼかし120px |
+| [全体ぼけ](assets/examples/no_fusion_0914_003_uniform.jpg) | 全体 / 半径40px / ハイライト90% / 玉ボケ強調100% / 高品質512 |
+
+入力の中央クロップは [no_fusion_0914_003_source_16x9.jpg](assets/examples/no_fusion_0914_003_source_16x9.jpg)、設定値は [no_fusion_0914_003_parameters.json](assets/examples/no_fusion_0914_003_parameters.json) に保存しています。
+
 ## 元プラグインとの一致
 
 - 既定の「ダウンサンプル: 自動」は元AE GPU版と同じ選択です。半径32px以上で2倍、96px以上で4倍に縮小してぼかし、線形補間で戻して、元版と同じ実効半径4pxの遷移で原画と合成します。「なし（原寸）」なら通常解像度パスです。
